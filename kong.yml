@@ -1,0 +1,26 @@
+_format_version: "3.0"
+
+services:
+  - name: chat-service
+    url: http://chat-service:8002
+    routes:
+      - name: chat-route
+        paths:
+          - /chat
+        strip_path: true
+
+  - name: user-service
+    url: http://user-service:8000
+    routes:
+      - name: user-route
+        paths:
+          - /users
+        strip_path: true
+
+  - name: ride-service
+    url: http://ride-service:8000
+    routes:
+      - name: ride-route
+        paths:
+          - /rides
+        strip_path: true
