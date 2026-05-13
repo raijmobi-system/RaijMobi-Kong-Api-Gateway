@@ -14,13 +14,13 @@ services:
     routes:
       - name: user-route
         paths:
-          - /users
-        strip_path: true
+          - /api
+        strip_path: false   # preserva /api na requisição repassada
 
   - name: ride-service
     url: http://ride-service:8000
     routes:
       - name: ride-route
         paths:
-          - /rides
-        strip_path: true
+          - /api/v1
+        strip_path: false
