@@ -1,26 +1,68 @@
 _format_version: "3.0"
 
 services:
+  # ==========================================
+  # 1. USER SERVICE
+  # ==========================================
+  - name: user-service
+    url: http://user-service:8000
+    routes:
+      # --- ROTAS PÚBLICAS (Sem JWT) ---
+      - name: auth-routes
+        paths:
+          - /api/login           # <-- Rota real do Django liberada!
+          - /api/register        # <-- Rota real do Django liberada!
+          - /api/token/refresh   # <-- Rota real do Django liberada!
+        strip_path: false
+      
+      # --- ROTAS PROTEGIDAS (Com JWT) ---
+      - name: user-route-protected
+        paths:
+          - /api
+        strip_path: false
+        plugins:
+          - name: jwt
+            config:
+              claims_to_verify:
+                - exp
+
+  # ==========================================
+  # 2. CHAT SERVICE
+  # ==========================================
   - name: chat-service
-    url: http://chat-service:8002
+    url: http://chat-service:8000       # <-- Aponta para a porta 8000 do container chat
+    plugins:
+      - name: jwt
+        config:
+          claims_to_verify:
+            - exp
     routes:
       - name: chat-route
         paths:
           - /chat
-        strip_path: true
+        strip_path: false
 
-  - name: user-service
-    url: http://user-service:8000
-    routes:
-      - name: user-route
-        paths:
-          - /api
-        strip_path: false   # preserva /api na requisição repassada
-
+  # ==========================================
+  # 3. RIDE SERVICE
+  # ==========================================
   - name: ride-service
-    url: http://ride-service:8000
+    url: http://ride-service:8000       # <-- Aponta para a porta 8000 do container ride
+    plugins:
+      - name: jwt
+        config:
+          claims_to_verify:
+            - exp
     routes:
       - name: ride-route
         paths:
           - /api/v1
         strip_path: false
+
+
+
+consumers:
+  - username: frontend-app
+    jwt_secrets:
+      - key: "raijmobi-app"
+        secret: "django-insecure-(x-9q@fyfpu&cc%0p7=0a+=5p_aa2m*###8w8xm&$p_ep$x4ks"
+        algorithm: "HS256"
