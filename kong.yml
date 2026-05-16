@@ -1,3 +1,59 @@
+# _format_version: "3.0"
+
+# services:
+#   - name: chat-service
+#     url: http://chat-service:8002
+#     routes:
+#       - name: chat-route
+#         paths:
+#           - /api
+#         strip_path: false
+
+#   - name: user-service
+#     url: http://user-service:8000
+#     routes:
+#       - name: user-route
+#         paths:
+#           - /api
+#         strip_path: false   # preserva /api na requisição repassada
+
+#   - name: ride-service
+#     url: http://ride-service:8000
+#     routes:
+#       - name: ride-route
+#         paths:
+#           - /api/v1
+#         strip_path: false
+
+
+
+# services:
+#   - name: user-service
+#     url: http://user-service:8000
+#     routes:
+#       - name: user-route
+#         paths:
+#           - /api
+#         strip_path: false
+
+#   - name: chat-service
+#     url: http://chat-service:8002
+#     routes:
+#       - name: chat-route
+#         paths:
+#           - /api/chat
+#         strip_path: true
+
+#   - name: ride-service
+#     url: http://ride-service:8000
+#     routes:
+#       - name: ride-route
+#         paths:
+#           - /api/v1
+#         strip_path: true
+
+
+
 _format_version: "3.0"
 
 services:
@@ -55,7 +111,7 @@ services:
     routes:
       - name: ride-route
         paths:
-          - /api/v1
+          - /api/ride
         strip_path: false
 
 
