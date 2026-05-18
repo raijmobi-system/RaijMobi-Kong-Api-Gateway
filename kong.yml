@@ -95,7 +95,7 @@ services:
     routes:
       - name: chat-route
         paths:
-          - /chat
+          - /api/chat
         strip_path: false
 
   # ==========================================
