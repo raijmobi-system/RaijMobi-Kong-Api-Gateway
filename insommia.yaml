@@ -1,0 +1,333 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2025-01-20T12:00:00.000Z",
+  "__export_source": "insomnia.unit",
+  "resources": [
+    {
+      "_id": "fld_setup",
+      "parentId": "wrk_main",
+      "_type": "request_group",
+      "name": "Setup",
+      "metaSortKey": -2
+    },
+    {
+      "_id": "fld_registration",
+      "parentId": "wrk_main",
+      "_type": "request_group",
+      "name": "Registration",
+      "metaSortKey": -1
+    },
+    {
+      "_id": "req_driver_register",
+      "parentId": "fld_registration",
+      "_type": "request",
+      "name": "Register Driver",
+      "method": "POST",
+      "url": "{{ base_url }}/api/register/",
+      "headers": [],
+      "body": {
+        "mimeType": "multipart/form-data",
+        "params": [
+          { "name": "email", "value": "motorista.silva@test.com", "type": "text" },
+          { "name": "nome", "value": "Motorista Silva", "type": "text" },
+          { "name": "password", "value": "Teste@123", "type": "text" },
+          { "name": "cpf", "value": "111.111.111-11", "type": "text" },
+          { "name": "telefone", "value": "11999990001", "type": "text" },
+          { "name": "tipo_usuario", "value": "Motorista", "type": "text" }
+        ]
+      },
+      "afterResponseScript": "const body = JSON.parse(responseBody);\ninsomnia.environment.set('driver_id', body.id);",
+      "tests": [
+        { "name": "Status 201", "test": "responseCode.code === 201" },
+        { "name": "Has ID", "test": "JSON.parse(responseBody).id !== undefined" }
+      ]
+    },
+    {
+      "_id": "req_passenger_register",
+      "parentId": "fld_registration",
+      "_type": "request",
+      "name": "Register Passenger",
+      "method": "POST",
+      "url": "{{ base_url }}/api/register/",
+      "headers": [],
+      "body": {
+        "mimeType": "multipart/form-data",
+        "params": [
+          { "name": "email", "value": "passageiro.santos@test.com", "type": "text" },
+          { "name": "nome", "value": "Passageiro Santos", "type": "text" },
+          { "name": "password", "value": "Teste@123", "type": "text" },
+          { "name": "cpf", "value": "222.222.222-22", "type": "text" },
+          { "name": "telefone", "value": "11999990002", "type": "text" },
+          { "name": "tipo_usuario", "value": "Passageiro", "type": "text" }
+        ]
+      },
+      "afterResponseScript": "const body = JSON.parse(responseBody);\ninsomnia.environment.set('passenger_id', body.id);",
+      "tests": [
+        { "name": "Status 201", "test": "responseCode.code === 201" },
+        { "name": "Has ID", "test": "JSON.parse(responseBody).id !== undefined" }
+      ]
+    },
+    {
+      "_id": "fld_login",
+      "parentId": "wrk_main",
+      "_type": "request_group",
+      "name": "Login",
+      "metaSortKey": 0
+    },
+    {
+      "_id": "req_driver_login",
+      "parentId": "fld_login",
+      "_type": "request",
+      "name": "Driver Login",
+      "method": "POST",
+      "url": "{{ base_url }}/api/login/",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"motorista.silva@test.com\",\n  \"password\": \"Teste@123\"\n}"
+      },
+      "afterResponseScript": "const body = JSON.parse(responseBody);\ninsomnia.environment.set('driver_access', body.access);\ninsomnia.environment.set('driver_refresh', body.refresh);",
+      "tests": [
+        { "name": "Status 200", "test": "responseCode.code === 200" },
+        { "name": "Has access token", "test": "JSON.parse(responseBody).access !== undefined" }
+      ]
+    },
+    {
+      "_id": "req_passenger_login",
+      "parentId": "fld_login",
+      "_type": "request",
+      "name": "Passenger Login",
+      "method": "POST",
+      "url": "{{ base_url }}/api/login/",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"passageiro.santos@test.com\",\n  \"password\": \"Teste@123\"\n}"
+      },
+      "afterResponseScript": "const body = JSON.parse(responseBody);\ninsomnia.environment.set('passenger_access', body.access);\ninsomnia.environment.set('passenger_refresh', body.refresh);",
+      "tests": [
+        { "name": "Status 200", "test": "responseCode.code === 200" },
+        { "name": "Has access token", "test": "JSON.parse(responseBody).access !== undefined" }
+      ]
+    },
+    {
+      "_id": "fld_vehicle",
+      "parentId": "wrk_main",
+      "_type": "request_group",
+      "name": "Vehicle & Ride",
+      "metaSortKey": 1
+    },
+    {
+      "_id": "req_create_vehicle",
+      "parentId": "fld_vehicle",
+      "_type": "request",
+      "name": "Create Vehicle",
+      "method": "POST",
+      "url": "{{ base_url }}/api/ride/vehicles/",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{ driver_access }}" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"user\": {{ driver_id }},\n  \"model\": \"Fiat Uno\",\n  \"color\": \"vermelho\",\n  \"plate\": \"ABC1D23\",\n  \"seats\": 5\n}"
+      },
+      "afterResponseScript": "const body = JSON.parse(responseBody);\ninsomnia.environment.set('vehicle_id', body.id);",
+      "tests": [
+        { "name": "Status 201", "test": "responseCode.code === 201" }
+      ]
+    },
+    {
+      "_id": "req_create_ride",
+      "parentId": "fld_vehicle",
+      "_type": "request",
+      "name": "Create Ride",
+      "method": "POST",
+      "url": "{{ base_url }}/api/ride/rides/",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{ driver_access }}" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"vehicle\": {{ vehicle_id }},\n  \"origin\": \"Terminal Central\",\n  \"destination\": \"Aeroporto\",\n  \"start_time\": \"2025-01-20T14:00:00.000Z\",\n  \"expected_arrival\": \"2025-01-20T15:00:00.000Z\",\n  \"available_seats\": 3,\n  \"status\": \"pendente\",\n  \"price\": 45.00\n}"
+      },
+      "afterResponseScript": "const body = JSON.parse(responseBody);\ninsomnia.environment.set('ride_id', body.id);\ninsomnia.environment.set('ride_uuid', body.uuid);",
+      "tests": [
+        { "name": "Status 201", "test": "responseCode.code === 201" },
+        { "name": "Has UUID", "test": "JSON.parse(responseBody).uuid !== undefined" }
+      ]
+    },
+    {
+      "_id": "fld_reservation",
+      "parentId": "wrk_main",
+      "_type": "request_group",
+      "name": "Reservation",
+      "metaSortKey": 2
+    },
+    {
+      "_id": "req_create_reservation",
+      "parentId": "fld_reservation",
+      "_type": "request",
+      "name": "Create Reservation",
+      "method": "POST",
+      "url": "{{ base_url }}/api/ride/reservations/",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{ passenger_access }}" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"ride\": {{ ride_id }},\n  \"passenger\": {{ passenger_id }},\n  \"requested_seats\": 2,\n  \"status\": \"pendente\"\n}"
+      },
+      "afterResponseScript": "const body = JSON.parse(responseBody);\ninsomnia.environment.set('reservation_id', body.id);",
+      "tests": [
+        { "name": "Status 201", "test": "responseCode.code === 201" }
+      ]
+    },
+    {
+      "_id": "req_confirm_reservation",
+      "parentId": "fld_reservation",
+      "_type": "request",
+      "name": "Confirm Reservation",
+      "method": "PATCH",
+      "url": "{{ base_url }}/api/ride/reservations/{{ reservation_id }}/",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{ passenger_access }}" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"status\": \"confirmada\"\n}"
+      },
+      "tests": [
+        { "name": "Status 200", "test": "responseCode.code === 200" }
+      ]
+    },
+    {
+      "_id": "fld_chat",
+      "parentId": "wrk_main",
+      "_type": "request_group",
+      "name": "Chat",
+      "metaSortKey": 3
+    },
+    {
+      "_id": "req_chat_room",
+      "parentId": "fld_chat",
+      "_type": "request",
+      "name": "Get Chat Room",
+      "method": "GET",
+      "url": "{{ base_url }}/api/chat/rooms/{{ ride_uuid }}/",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ passenger_access }}" }
+      ],
+      "tests": [
+        { "name": "Status 200", "test": "responseCode.code === 200" }
+      ]
+    },
+    {
+      "_id": "req_send_msg_passenger",
+      "parentId": "fld_chat",
+      "_type": "request",
+      "name": "Send Message (Passenger)",
+      "method": "POST",
+      "url": "{{ base_url }}/api/chat/rooms/{{ ride_uuid }}/messages/",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{ passenger_access }}" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"usuario_id\": {{ passenger_id }},\n  \"conteudo\": \"Olá, motorista! Estou no ponto.\"\n}"
+      },
+      "tests": [
+        { "name": "Status 201", "test": "responseCode.code === 201" }
+      ]
+    },
+    {
+      "_id": "req_send_msg_driver",
+      "parentId": "fld_chat",
+      "_type": "request",
+      "name": "Send Message (Driver)",
+      "method": "POST",
+      "url": "{{ base_url }}/api/chat/rooms/{{ ride_uuid }}/messages/",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{ driver_access }}" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"usuario_id\": {{ driver_id }},\n  \"conteudo\": \"Chego em 5 minutos.\"\n}"
+      },
+      "tests": [
+        { "name": "Status 201", "test": "responseCode.code === 201" }
+      ]
+    },
+    {
+      "_id": "req_list_messages",
+      "parentId": "fld_chat",
+      "_type": "request",
+      "name": "List Messages",
+      "method": "GET",
+      "url": "{{ base_url }}/api/chat/rooms/{{ ride_uuid }}/messages/",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ passenger_access }}" }
+      ],
+      "tests": [
+        { "name": "Status 200", "test": "responseCode.code === 200" },
+        { "name": "Has at least 2 messages", "test": "JSON.parse(responseBody).length >= 2" }
+      ]
+    },
+    {
+      "_id": "fld_auth",
+      "parentId": "wrk_main",
+      "_type": "request_group",
+      "name": "Auth (Refresh/Logout)",
+      "metaSortKey": 4
+    },
+    {
+      "_id": "req_refresh_token",
+      "parentId": "fld_auth",
+      "_type": "request",
+      "name": "Token Refresh",
+      "method": "POST",
+      "url": "{{ base_url }}/api/token/refresh/",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"refresh\": \"{{ driver_refresh }}\"\n}"
+      },
+      "afterResponseScript": "const body = JSON.parse(responseBody);\ninsomnia.environment.set('new_access', body.access);\nif (body.refresh) {\n  insomnia.environment.set('new_refresh', body.refresh);\n}",
+      "tests": [
+        { "name": "Status 200", "test": "responseCode.code === 200" }
+      ]
+    },
+    {
+      "_id": "req_logout",
+      "parentId": "fld_auth",
+      "_type": "request",
+      "name": "Logout",
+      "method": "POST",
+      "url": "{{ base_url }}/api/logout/",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{ new_access || driver_access }}" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"refresh\": \"{{ new_refresh || driver_refresh }}\"\n}"
+      },
+      "tests": [
+        { "name": "Status 205", "test": "responseCode.code === 205" }
+      ]
+    },
+    {
+      "_id": "wrk_main",
+      "_type": "workspace",
+      "name": "Ride API Tests (Static)",
+      "description": "Collection com dados estáticos – sem geração automática.",
+      "scope": "collection"
+    }
+  ]
+}

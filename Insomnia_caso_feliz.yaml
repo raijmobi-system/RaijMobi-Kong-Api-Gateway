@@ -1,0 +1,501 @@
+type: collection.insomnia.rest/5.0
+schema_version: "5.1"
+name: Ride API Tests (Static)
+meta:
+  id: wrk_c295e676f4bb46f7bb68c292a47088c4
+  created: 1779128164815
+  modified: 1779128164815
+  description: ""
+collection:
+  - name: Registration
+    meta:
+      id: fld_deedfbce895d4494860ad6abb1d32c77
+      created: 1779128164816
+      modified: 1779128164816
+      sortKey: -1
+      description: ""
+    children:
+      - url: http://localhost:8000/api/register/
+        name: Register Driver
+        meta:
+          id: req_2dd0b609856d4f9db483df7eeab0c8b0
+          created: 1779128164816
+          modified: 1779128673812
+          isPrivate: false
+          description: ""
+          sortKey: -1779128164816
+        method: POST
+        body:
+          mimeType: multipart/form-data
+          params:
+            - name: email
+              value: motorista.silva@test.com
+              type: text
+            - name: nome
+              value: Motorista Silva
+              type: text
+            - name: password
+              value: Teste@123
+              type: text
+            - name: cpf
+              value: 719.495.190-82
+              type: text
+            - name: telefone
+              value: "11999990001"
+              type: text
+            - name: tipo_usuario
+              value: Motorista
+              type: text
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: http://localhost:8000/api/register/
+        name: Register Passenger
+        meta:
+          id: req_9a3be4b660da4e109b430a6ebb819674
+          created: 1779128164817
+          modified: 1779128646276
+          isPrivate: false
+          description: ""
+          sortKey: -1779128164817
+        method: POST
+        body:
+          mimeType: multipart/form-data
+          params:
+            - name: email
+              value: passageiro.santos@test.com
+              type: text
+            - name: nome
+              value: Passageiro Santos
+              type: text
+            - name: password
+              value: Teste@123
+              type: text
+            - name: cpf
+              value: 153.376.980-01
+              type: text
+            - name: telefone
+              value: "11999990002"
+              type: text
+            - name: tipo_usuario
+              value: Passageiro
+              type: text
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+  - name: Login
+    meta:
+      id: fld_6c1a3dc23f114009b965c337bef7c42f
+      created: 1779128164817
+      modified: 1779128164817
+      sortKey: 0
+      description: ""
+    children:
+      - url: http://localhost:8000/api/login/
+        name: Driver Login
+        meta:
+          id: req_8c9e70fd9da743318436ca60e3c10180
+          created: 1779128164817
+          modified: 1779128766560
+          isPrivate: false
+          description: ""
+          sortKey: -1779128164817
+        method: POST
+        body:
+          mimeType: application/json
+          text: |-
+            {
+              "email": "motorista.silva@test.com",
+              "password": "Teste@123"
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: http://localhost:8000/api/login/
+        name: Passenger Login
+        meta:
+          id: req_71363c705d124afbb664df33371ce13b
+          created: 1779128164818
+          modified: 1779128688202
+          isPrivate: false
+          description: ""
+          sortKey: -1779128164818
+        method: POST
+        body:
+          mimeType: application/json
+          text: |-
+            {
+              "email": "passageiro.santos@test.com",
+              "password": "Teste@123"
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+  - name: Vehicle & Ride
+    meta:
+      id: fld_a71d32721de74ef798cbb382447fa14f
+      created: 1779128164818
+      modified: 1779128164818
+      sortKey: 1
+      description: ""
+    children:
+      - url: http://localhost:8000/api/ride/rides/
+        name: Create Ride
+        meta:
+          id: req_0a2c2fdf4bfb40f0825a73b72187a0c5
+          created: 1779128164819
+          modified: 1779128878835
+          isPrivate: false
+          description: ""
+          sortKey: -1779128164819
+        method: POST
+        body:
+          mimeType: application/json
+          text: |-
+            {
+              "vehicle": 1,
+              "origin": "Terminal Central",
+              "destination": "Aeroporto",
+              "start_time": "2026-05-20T14:00:00.000Z",      
+              "expected_arrival": "2026-05-20T15:00:00.000Z", 
+              "available_seats": 3,
+              "status": "pendente",
+              "price": 45.00
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+          - name: Authorization
+            value: Bearer
+              eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc5MTMwNTY3LCJpYXQiOjE3NzkxMjg3NjcsImp0aSI6IjFkM2M4YWU0NDZmMDRkNzlhZDlkNDRhYWE0YzA5M2U5IiwidXNlcl9pZCI6IjQyY2IxNDM5LThlOTUtNDE4Yy1hZDE4LTk3NDQ0MzNhNzBkYSIsImlzcyI6InJhaWptb2JpLWFwcCJ9.nIRf-cgIZKckUvRliEtBmF7J6S3-kaZHUyzfizYTsWM
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: http://localhost:8000/api/ride/vehicles/
+        name: Create Vehicle
+        meta:
+          id: req_a0e98385ff254f01aee9742fb90159bc
+          created: 1779128164819
+          modified: 1779128797644
+          isPrivate: false
+          description: ""
+          sortKey: -1779128164819
+        method: POST
+        body:
+          mimeType: application/json
+          text: |-
+            {
+              "user": "42cb1439-8e95-418c-ad18-9744433a70da",
+              "model": "Fiat Uno",
+              "color": "vermelho",
+              "plate": "ABC1D23",
+              "seats": 5
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+          - name: Authorization
+            value: Bearer
+              eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc5MTMwNTY3LCJpYXQiOjE3NzkxMjg3NjcsImp0aSI6IjFkM2M4YWU0NDZmMDRkNzlhZDlkNDRhYWE0YzA5M2U5IiwidXNlcl9pZCI6IjQyY2IxNDM5LThlOTUtNDE4Yy1hZDE4LTk3NDQ0MzNhNzBkYSIsImlzcyI6InJhaWptb2JpLWFwcCJ9.nIRf-cgIZKckUvRliEtBmF7J6S3-kaZHUyzfizYTsWM
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+  - name: Reservation
+    meta:
+      id: fld_20f1aaa2d8d94e32b690ebcd8975719e
+      created: 1779128164819
+      modified: 1779128164819
+      sortKey: 2
+      description: ""
+    children:
+      - url: http://localhost:8000/api/ride/reservations/1/
+        name: Confirm Reservation
+        meta:
+          id: req_0eeb9f65a7ca4ae2bd7e7bd3f82941ae
+          created: 1779128164820
+          modified: 1779129006462
+          isPrivate: false
+          description: ""
+          sortKey: -1779128164820
+        method: PATCH
+        body:
+          mimeType: application/json
+          text: |-
+            {
+              "status": "confirmada"
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+          - name: Authorization
+            value: Bearer
+              eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc5MTMwNDg5LCJpYXQiOjE3NzkxMjg2ODksImp0aSI6IjcxMDc2OTUzYjc5OTQzODY4ZWFmZDJhNWY2Y2U2MmZiIiwidXNlcl9pZCI6ImIxOGFlMWNjLTE3MjEtNDMwYS04MWE3LTkyMThiYzZjZTk0MSIsImlzcyI6InJhaWptb2JpLWFwcCJ9.E2kI-XkUZczKXXlftTiGaMHAxSwStPndJoV9Oa6_OrY
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: http://localhost:8000/api/ride/reservations/
+        name: Create Reservation
+        meta:
+          id: req_7a766664a8bb467ab466a270d7af2dab
+          created: 1779128164820
+          modified: 1779128968619
+          isPrivate: false
+          description: ""
+          sortKey: -1779128164820
+        method: POST
+        body:
+          mimeType: application/json
+          text: |-
+            {
+              "ride": 1,
+              "passenger": "b18ae1cc-1721-430a-81a7-9218bc6ce941",
+              "requested_seats": 2,
+              "status": "pendente"
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+          - name: Authorization
+            value: Bearer
+              eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc5MTMwNDg5LCJpYXQiOjE3NzkxMjg2ODksImp0aSI6IjcxMDc2OTUzYjc5OTQzODY4ZWFmZDJhNWY2Y2U2MmZiIiwidXNlcl9pZCI6ImIxOGFlMWNjLTE3MjEtNDMwYS04MWE3LTkyMThiYzZjZTk0MSIsImlzcyI6InJhaWptb2JpLWFwcCJ9.E2kI-XkUZczKXXlftTiGaMHAxSwStPndJoV9Oa6_OrY
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+  - name: Chat
+    meta:
+      id: fld_f27f93d5ccc04108a35b7d7582c9a0f2
+      created: 1779128164820
+      modified: 1779128164820
+      sortKey: 3
+      description: ""
+    children:
+      - url: http://localhost:8000/api/chat/rooms/3a4b593c-a4fa-41e7-bb33-7a2059a21f2e/
+        name: Get Chat Room
+        meta:
+          id: req_01f65226762b464e94e8e45dec0ff8bb
+          created: 1779128164821
+          modified: 1779129068841
+          isPrivate: false
+          description: ""
+          sortKey: -1779128164821.5
+        method: GET
+        headers:
+          - name: Authorization
+            value: Bearer
+              eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc5MTMwNDg5LCJpYXQiOjE3NzkxMjg2ODksImp0aSI6IjcxMDc2OTUzYjc5OTQzODY4ZWFmZDJhNWY2Y2U2MmZiIiwidXNlcl9pZCI6ImIxOGFlMWNjLTE3MjEtNDMwYS04MWE3LTkyMThiYzZjZTk0MSIsImlzcyI6InJhaWptb2JpLWFwcCJ9.E2kI-XkUZczKXXlftTiGaMHAxSwStPndJoV9Oa6_OrY
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: http://localhost:8000/api/chat/rooms/3a4b593c-a4fa-41e7-bb33-7a2059a21f2e/messages/
+        name: Send Message (Driver)
+        meta:
+          id: req_66866e9186b34d74a41a816627c5e29c
+          created: 1779128164821
+          modified: 1779129205712
+          isPrivate: false
+          description: ""
+          sortKey: -1779128164821
+        method: POST
+        body:
+          mimeType: application/json
+          text: |-
+            {
+              "usuario_id": "42cb1439-8e95-418c-ad18-9744433a70da",
+              "conteudo": "Chego em 5 minutos."
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+          - name: Authorization
+            value: Bearer
+              eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc5MTMwNTY3LCJpYXQiOjE3NzkxMjg3NjcsImp0aSI6IjFkM2M4YWU0NDZmMDRkNzlhZDlkNDRhYWE0YzA5M2U5IiwidXNlcl9pZCI6IjQyY2IxNDM5LThlOTUtNDE4Yy1hZDE4LTk3NDQ0MzNhNzBkYSIsImlzcyI6InJhaWptb2JpLWFwcCJ9.nIRf-cgIZKckUvRliEtBmF7J6S3-kaZHUyzfizYTsWM
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: http://localhost:8000/api/chat/rooms/3a4b593c-a4fa-41e7-bb33-7a2059a21f2e/messages/
+        name: Send Message (Passenger)
+        meta:
+          id: req_91ec71f8126348e68d4d49317805182a
+          created: 1779128164821
+          modified: 1779129144326
+          isPrivate: false
+          description: ""
+          sortKey: -1779128164821
+        method: POST
+        body:
+          mimeType: application/json
+          text: |-
+            {
+              "usuario_id": "b18ae1cc-1721-430a-81a7-9218bc6ce941",
+              "conteudo": "Olá, motorista! Estou no ponto."
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+          - name: Authorization
+            value: Bearer
+              eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc5MTMwNDg5LCJpYXQiOjE3NzkxMjg2ODksImp0aSI6IjcxMDc2OTUzYjc5OTQzODY4ZWFmZDJhNWY2Y2U2MmZiIiwidXNlcl9pZCI6ImIxOGFlMWNjLTE3MjEtNDMwYS04MWE3LTkyMThiYzZjZTk0MSIsImlzcyI6InJhaWptb2JpLWFwcCJ9.E2kI-XkUZczKXXlftTiGaMHAxSwStPndJoV9Oa6_OrY
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: http://localhost:8000/api/chat/rooms/3a4b593c-a4fa-41e7-bb33-7a2059a21f2e/messages/
+        name: List Messages
+        meta:
+          id: req_4f401d4b45c649468c232d2e4491cf84
+          created: 1779128164822
+          modified: 1779129243258
+          isPrivate: false
+          description: ""
+          sortKey: -1779128164721
+        method: GET
+        headers:
+          - name: Authorization
+            value: Bearer
+              eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc5MTMwNDg5LCJpYXQiOjE3NzkxMjg2ODksImp0aSI6IjcxMDc2OTUzYjc5OTQzODY4ZWFmZDJhNWY2Y2U2MmZiIiwidXNlcl9pZCI6ImIxOGFlMWNjLTE3MjEtNDMwYS04MWE3LTkyMThiYzZjZTk0MSIsImlzcyI6InJhaWptb2JpLWFwcCJ9.E2kI-XkUZczKXXlftTiGaMHAxSwStPndJoV9Oa6_OrY
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+  - name: Auth (Refresh/Logout)
+    meta:
+      id: fld_652a8131d46a4e50a85e3f24336ca326
+      created: 1779128164822
+      modified: 1779128164822
+      sortKey: 4
+      description: ""
+    children:
+      - url: http://localhost:8000/api/logout/
+        name: Logout
+        meta:
+          id: req_0b2069375d4a4508a6cef29870adf060
+          created: 1779128164823
+          modified: 1779129385216
+          isPrivate: false
+          description: ""
+          sortKey: -1779128164823
+        method: POST
+        body:
+          mimeType: application/json
+          text: >-
+            {
+              "refresh": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTc3OTczNDE0OSwiaWF0IjoxNzc5MTI5MzQ5LCJqdGkiOiI0N2RmYmM5MWU2NTM0ZGMzYmZkNmQ4NzY5MDhmMzA2NCIsInVzZXJfaWQiOiJiMThhZTFjYy0xNzIxLTQzMGEtODFhNy05MjE4YmM2Y2U5NDEiLCJpc3MiOiJyYWlqbW9iaS1hcHAifQ.3bgMpW6cN-DzreLdzi4l6QSoKZ8QPbbTRp0E5CGpsEc"
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+          - name: Authorization
+            value: Bearer
+              eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc5MTMwNTY3LCJpYXQiOjE3NzkxMjg3NjcsImp0aSI6IjFkM2M4YWU0NDZmMDRkNzlhZDlkNDRhYWE0YzA5M2U5IiwidXNlcl9pZCI6IjQyY2IxNDM5LThlOTUtNDE4Yy1hZDE4LTk3NDQ0MzNhNzBkYSIsImlzcyI6InJhaWptb2JpLWFwcCJ9.nIRf-cgIZKckUvRliEtBmF7J6S3-kaZHUyzfizYTsWM
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: http://localhost:8000/api/token/refresh/
+        name: Token Refresh
+        meta:
+          id: req_0b412c2ac9394889a9fe4044698e216e
+          created: 1779128164823
+          modified: 1779129348609
+          isPrivate: false
+          description: ""
+          sortKey: -1779128164823
+        method: POST
+        body:
+          mimeType: application/json
+          text: >-
+            {
+              "refresh": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTc3OTczNDE0MSwiaWF0IjoxNzc5MTI5MzQxLCJqdGkiOiJjOGZkYWFhZTI0NTE0YWRiYmNjNjQzYWJkNzRjMmQzZSIsInVzZXJfaWQiOiJiMThhZTFjYy0xNzIxLTQzMGEtODFhNy05MjE4YmM2Y2U5NDEiLCJpc3MiOiJyYWlqbW9iaS1hcHAifQ.6Dt9n-DhUVZXdh2wmt2w2a3bDlY1VDfM94HvNf7Wik4"
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+cookieJar:
+  name: Default Jar
+  meta:
+    id: jar_c38e694df8f106ed0fb60028dc3fd6d069b8e677
+    created: 1779128164826
+    modified: 1779128164826
+environments:
+  name: Base Environment
+  meta:
+    id: env_c38e694df8f106ed0fb60028dc3fd6d069b8e677
+    created: 1779128164824
+    modified: 1779128164824
+    isPrivate: false
