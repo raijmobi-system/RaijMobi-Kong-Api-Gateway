@@ -90,7 +90,7 @@ resp = req("POST", f"{BASE_URL}/api/register/", data={
 passenger_data = check_response(resp, 201)
 print(f"✅ Passageiro registrado:\n{json.dumps(passenger_data, indent=2)}")
 
-print("\n⏳ Aguardando sincronização Kafka (3s)...")
+print("\n⏳ Aguardando sincronização Kafka (5s)...")
 time.sleep(3)
 
 # ------------------------------------------------------------
@@ -121,7 +121,8 @@ print("✅ Token refresh OK")
 print("\n🚗 Criando veículo 1...")
 vehicle_data = {
     "user": driver_data["id"], "model": "Fiat Uno", "color": "vermelho",
-    "plate": "ABC1D23", "seats": 5
+    "plate": "ABC1D23", "seats": 5,
+    "type_vehicle": "carro" 
 }
 resp = req("POST", f"{BASE_URL}/api/ride/vehicles/", json=vehicle_data, headers=auth_header(new_driver_access))
 vehicle1 = check_response(resp, 201)
@@ -131,7 +132,8 @@ print(f"✅ Veículo 1 criado:\n{json.dumps(vehicle1, indent=2)}")
 print("\n🚗 Criando veículo 2...")
 vehicle2_data = {
     "user": driver_data["id"], "model": "Ford Ka", "color": "azul",
-    "plate": "XYZ9A87", "seats": 4
+    "plate": "XYZ9A87", "seats": 4,
+    "type_vehicle": "carro" 
 }
 resp = req("POST", f"{BASE_URL}/api/ride/vehicles/", json=vehicle2_data, headers=auth_header(new_driver_access))
 vehicle2 = check_response(resp, 201)
