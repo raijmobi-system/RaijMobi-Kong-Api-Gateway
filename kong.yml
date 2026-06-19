@@ -69,6 +69,7 @@ services:
           - /api/login           # <-- Rota real do Django liberada!
           - /api/register        # <-- Rota real do Django liberada!
           - /api/token/refresh   # <-- Rota real do Django liberada!
+          - /api/reset-password    
         strip_path: false
       
       # --- ROTAS PROTEGIDAS (Com JWT) ---
