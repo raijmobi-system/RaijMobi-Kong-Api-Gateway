@@ -1203,7 +1203,8 @@ veiculo_detalhe = check_response(resp, 200)
 print(f"✅ Detalhe:\n{json.dumps(veiculo_detalhe, indent=2)}")
 
 print(f"\n✏️ Atualizar veículo {vehicle1_id} (PATCH)...")
-resp = req("PATCH", f"{BASE_URL}/api/ride/vehicles/{vehicle1_id}/", json={"color": "verde"}, headers=auth_header(new_driver_access))
+# resp = req("PATCH", f"{BASE_URL}/api/ride/vehicles/{vehicle1_id}/", json={"color": "Vermelho"}, headers=auth_header(new_driver_access))
+resp = req("PATCH", f"{BASE_URL}/api/ride/vehicles/{vehicle1_id}/", json={"color": "azul"}, headers=auth_header(new_driver_access))
 veiculo_atualizado = check_response(resp, 200)
 print(f"✅ Veículo atualizado:\n{json.dumps(veiculo_atualizado, indent=2)}")
 
