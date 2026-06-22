@@ -426,3 +426,190 @@ else:
     print(f"⚠️ Logout retornou {resp.status_code}")
 
 print("\n🎉 Testes concluídos com logs detalhados e formatados!")
+
+
+
+import requests
+import uuid
+import time
+import json
+from datetime import datetime, timedelta, timezone
+
+BASE_URL = "http://localhost:8004"
+
+# ------------------------------------------------------------
+# Funções auxiliares
+# ------------------------------------------------------------
+def check_response(resp, success_code=200):
+    if resp.status_code != success_code:
+        print(f"❌ Erro {resp.status_code}: {resp.text[:300]}")
+        resp.raise_for_status()
+    return resp.json()
+
+def req(method, url, **kwargs):
+    headers = kwargs.get("headers", {})
+    body = None
+    if "data" in kwargs:
+        body = kwargs["data"]
+    elif "json" in kwargs:
+        body = kwargs["json"]
+
+    print(f"\n➡️ {method} {url}")
+    if headers:
+        print(f"   headers: {json.dumps(headers, indent=2)}")
+    if body:
+        print(f"   body:\n{json.dumps(body, indent=2, ensure_ascii=False)}")
+
+    resp = requests.request(method, url, **kwargs)
+    print(f"⬅️ {resp.status_code}")
+    return resp
+
+# ------------------------------------------------------------
+# 1. Criar usuários
+# ------------------------------------------------------------
+print("\n📝 Criando motorista 1 (is_driver=True)...")
+driver1_payload = {
+    "id": str(uuid.uuid4()),
+    "name": "Motorista IA 1",
+    "is_driver": True
+}
+resp = req("POST", f"{BASE_URL}/api/ride/users/", json=driver1_payload)
+driver1 = check_response(resp, 201)
+print(f"✅ Motorista 1 criado: {json.dumps(driver1, indent=2)}")
+
+print("\n📝 Criando motorista 2 (is_driver=True)...")
+driver2_payload = {
+    "id": str(uuid.uuid4()),
+    "name": "Motorista IA 2",
+    "is_driver": True
+}
+resp = req("POST", f"{BASE_URL}/api/ride/users/", json=driver2_payload)
+driver2 = check_response(resp, 201)
+print(f"✅ Motorista 2 criado: {json.dumps(driver2, indent=2)}")
+
+print("\n📝 Criando passageiro (is_driver=False)...")
+passenger_payload = {
+    "id": str(uuid.uuid4()),
+    "name": "Passageiro IA",
+    "is_driver": False
+}
+resp = req("POST", f"{BASE_URL}/api/ride/users/", json=passenger_payload)
+passenger = check_response(resp, 201)
+print(f"✅ Passageiro criado: {json.dumps(passenger, indent=2)}")
+
+# ------------------------------------------------------------
+# 2. Criar veículos
+# ------------------------------------------------------------
+print("\n🚗 Criando veículo para motorista 1...")
+vehicle1_payload = {
+    "user": driver1["id"],
+    "model": "HB20",
+    "type_vehicle": "carro",
+    "color": "preto",
+    "plate": "TES-1234",
+    "seats": 5
+}
+resp = req("POST", f"{BASE_URL}/api/ride/vehicles/", json=vehicle1_payload)
+vehicle1 = check_response(resp, 201)
+vehicle1_id = vehicle1["id"]
+print(f"✅ Veículo 1 criado: {json.dumps(vehicle1, indent=2)}")
+
+print("\n🚗 Criando veículo para motorista 2...")
+vehicle2_payload = {
+    "user": driver2["id"],
+    "model": "Ford Ka",
+    "type_vehicle": "carro",
+    "color": "azul",
+    "plate": "XYZ-9876",
+    "seats": 4
+}
+resp = req("POST", f"{BASE_URL}/api/ride/vehicles/", json=vehicle2_payload)
+vehicle2 = check_response(resp, 201)
+vehicle2_id = vehicle2["id"]
+print(f"✅ Veículo 2 criado: {json.dumps(vehicle2, indent=2)}")
+
+# ------------------------------------------------------------
+# 3. Criar caronas (3 do motorista 1, 2 do motorista 2)
+# ------------------------------------------------------------
+rides = []
+origins = ["Terminal Central", "Shopping", "Aeroporto", "Centro", "Rodoviária"]
+destinations = ["Shopping", "Terminal Central", "Centro", "Aeroporto", "Rodoviária"]
+prices = [25.00, 30.00, 45.00, 20.00, 35.00]
+
+# Primeiras 3 caronas com motorista 1
+for i in range(3):
+    start = (datetime.now(timezone.utc) + timedelta(hours=i+1)).isoformat()
+    arrival = (datetime.now(timezone.utc) + timedelta(hours=i+2)).isoformat()
+    ride_data = {
+        "vehicle": vehicle1_id,
+        "origin": origins[i],
+        "destination": destinations[i],
+        "start_time": start,
+        "expected_arrival": arrival,
+        "available_seats": 3,
+        "status": "pendente",
+        "price": prices[i]
+    }
+    resp = req("POST", f"{BASE_URL}/api/ride/rides/", json=ride_data)
+    ride = check_response(resp, 201)
+    rides.append(ride)
+    print(f"✅ Carona {i+1} criada (motorista 1): id={ride['id']}")
+
+# Próximas 2 caronas com motorista 2
+for i in range(3, 5):
+    start = (datetime.now(timezone.utc) + timedelta(hours=i+1)).isoformat()
+    arrival = (datetime.now(timezone.utc) + timedelta(hours=i+2)).isoformat()
+    ride_data = {
+        "vehicle": vehicle2_id,
+        "origin": origins[i],
+        "destination": destinations[i],
+        "start_time": start,
+        "expected_arrival": arrival,
+        "available_seats": 2,   # veículo 2 tem apenas 4 assentos
+        "status": "pendente",
+        "price": prices[i]
+    }
+    resp = req("POST", f"{BASE_URL}/api/ride/rides/", json=ride_data)
+    ride = check_response(resp, 201)
+    rides.append(ride)
+    print(f"✅ Carona {i+1} criada (motorista 2): id={ride['id']}")
+
+# ------------------------------------------------------------
+# 4. Criar reservas para gerar histórico (3 primeiras caronas)
+# ------------------------------------------------------------
+print("\n📅 Criando reservas (histórico)...")
+for idx, ride in enumerate(rides[:3]):
+    reservation_payload = {
+        "ride": ride["id"],
+        "passenger": passenger["id"],
+        "requested_seats": 1,
+        "status": "confirmada"
+    }
+    resp = req("POST", f"{BASE_URL}/api/ride/reservations/", json=reservation_payload)
+    reservation = check_response(resp, 201)
+    print(f"✅ Reserva {idx+1} criada e confirmada: id={reservation['id']}")
+
+# Aguardar processamento (triggers assíncronos, se houver)
+time.sleep(2)
+
+# ------------------------------------------------------------
+# 5. TESTAR RECOMENDAÇÃO COM IA (OLLAMA)
+# ------------------------------------------------------------
+print("\n🤖 Testando recomendação por IA...")
+resp = req("GET", f"{BASE_URL}/api/ride/rides/ai-recommendations/?user_id={passenger['id']}&top_n=3")
+
+if resp.status_code == 200:
+    recommendations = resp.json()
+    print(f"✅ Recomendações obtidas ({len(recommendations)} caronas):")
+    for i, rec in enumerate(recommendations):
+        print(f"\n--- Recomendação {i+1} ---")
+        print(f"  Origem: {rec.get('origin')} → Destino: {rec.get('destination')}")
+        print(f"  Preço: R$ {rec.get('price')}")
+        print(f"  Partida: {rec.get('start_time')}")
+        print(f"  Vagas: {rec.get('available_seats')}")
+        print(f"  Status: {rec.get('status')}")
+        print(f"  Motivo IA: {rec.get('ai_reason', '(não informado)')}")
+else:
+    print(f"❌ Falha na recomendação: {resp.status_code} - {resp.text}")
+
+print("\n🎉 Teste finalizado!")
