@@ -613,3 +613,63 @@ else:
     print(f"❌ Falha na recomendação: {resp.status_code} - {resp.text}")
 
 print("\n🎉 Teste finalizado!")
+
+
+# ------------------------------------------------------------
+# 6. TESTAR FILTRO COM IA (OLLAMA)
+# ------------------------------------------------------------
+print("\n" + "="*60)
+print("🔍 Testando filtro inteligente com IA")
+print("="*60)
+
+# Texto de exemplo para filtrar caronas
+texto_busca = "quero viajar do centro para o aeroporto amanhã, preço até 30 reais"
+
+print(f"\n📝 Texto de busca: \"{texto_busca}\"")
+
+resp = req("POST", f"{BASE_URL}/api/ride/rides/ai-filter/", json={"text": texto_busca})
+
+if resp.status_code == 200:
+    data = resp.json()
+    print(f"✅ Filtro aplicado com sucesso!")
+    print(f"\n📊 Filtros extraídos pela IA:")
+    print(json.dumps(data.get('filters_applied', {}), indent=2, ensure_ascii=False))
+    print(f"\n📋 Caronas encontradas: {data.get('count', 0)}")
+    
+    if data.get('results'):
+        for i, ride in enumerate(data['results'], 1):
+            print(f"\n--- Carona {i} ---")
+            print(f"  ID: {ride.get('id')}")
+            print(f"  Origem: {ride.get('origin')} → Destino: {ride.get('destination')}")
+            print(f"  Partida: {ride.get('start_time')}")
+            print(f"  Preço: R$ {ride.get('price')}")
+            print(f"  Vagas: {ride.get('available_seats')}")
+            print(f"  Status: {ride.get('status')}")
+    else:
+        print("  Nenhuma carona encontrada com os filtros extraídos.")
+else:
+    print(f"❌ Falha no filtro: {resp.status_code}")
+    print(f"   Detalhes: {resp.text[:200]}")
+
+# Teste com outro texto
+print("\n" + "-"*40)
+print("📝 Teste com outro texto: \"Shopping, carro, até 35 reais\"")
+texto_busca2 ="Terminal Central para Shopping até 40"
+resp = req("POST", f"{BASE_URL}/api/ride/rides/ai-filter/", json={"text": texto_busca2})
+
+if resp.status_code == 200:
+    data = resp.json()
+    print(f"✅ Filtro aplicado com sucesso!")
+    print(f"\n📊 Filtros extraídos pela IA:")
+    print(json.dumps(data.get('filters_applied', {}), indent=2, ensure_ascii=False))
+    print(f"\n📋 Caronas encontradas: {data.get('count', 0)}")
+    
+    if data.get('results'):
+        for i, ride in enumerate(data['results'], 1):
+            print(f"\n--- Carona {i} ---")
+            print(f"  Origem: {ride.get('origin')} → Destino: {ride.get('destination')}")
+            print(f"  Preço: R$ {ride.get('price')}")
+    else:
+        print("  Nenhuma carona encontrada.")
+else:
+    print(f"❌ Falha no filtro: {resp.status_code}")
