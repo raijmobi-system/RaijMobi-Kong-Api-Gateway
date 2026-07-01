@@ -31,7 +31,7 @@ def check_response(resp, success_code=200):
     return resp.json()
 
 def get_tokens(email, password):
-    resp = requests.post(f"{BASE_URL}/api/login/", json={"email": email, "password": password})
+    resp = requests.post(f"{BASE_URL}/api/login/", data={"email": email, "password": password})
     data = check_response(resp)
     return data["access"], data["refresh"]
 
@@ -91,7 +91,7 @@ passenger_data = check_response(resp, 201)
 print(f"✅ Passageiro registrado:\n{json.dumps(passenger_data, indent=2)}")
 
 print("\n⏳ Aguardando sincronização Kafka (5s)...")
-time.sleep(3)
+time.sleep(9)
 
 # ------------------------------------------------------------
 # 2. Login
@@ -109,7 +109,7 @@ resp = req("PATCH", f"{BASE_URL}/api/profile/", data={"telefone": "11999999999"}
 check_response(resp, 200)
 
 print("\n🔄 Refresh token (POST /api/token/refresh/)...")
-resp = req("POST", f"{BASE_URL}/api/token/refresh/", json={"refresh": driver_refresh})
+resp = req("POST", f"{BASE_URL}/api/token/refresh/", data={"refresh": driver_refresh})
 tokens = check_response(resp, 200)
 new_driver_access = tokens["access"]
 new_driver_refresh = tokens.get("refresh", driver_refresh)
@@ -124,7 +124,7 @@ vehicle_data = {
     "plate": "ABC1D23", "seats": 5,
     "type_vehicle": "carro" 
 }
-resp = req("POST", f"{BASE_URL}/api/ride/vehicles/", json=vehicle_data, headers=auth_header(new_driver_access))
+resp = req("POST", f"{BASE_URL}/api/ride/vehicles/", data=vehicle_data, headers=auth_header(new_driver_access))
 vehicle1 = check_response(resp, 201)
 vehicle1_id = vehicle1["id"]
 print(f"✅ Veículo 1 criado:\n{json.dumps(vehicle1, indent=2)}")
@@ -135,7 +135,7 @@ vehicle2_data = {
     "plate": "XYZ9A87", "seats": 4,
     "type_vehicle": "carro" 
 }
-resp = req("POST", f"{BASE_URL}/api/ride/vehicles/", json=vehicle2_data, headers=auth_header(new_driver_access))
+resp = req("POST", f"{BASE_URL}/api/ride/vehicles/", data=vehicle2_data, headers=auth_header(new_driver_access))
 vehicle2 = check_response(resp, 201)
 vehicle2_id = vehicle2["id"]
 print(f"✅ Veículo 2 criado:\n{json.dumps(vehicle2, indent=2)}")
@@ -154,8 +154,8 @@ veiculo_detalhe = check_response(resp, 200)
 print(f"✅ Detalhe:\n{json.dumps(veiculo_detalhe, indent=2)}")
 
 print(f"\n✏️ Atualizar veículo {vehicle1_id} (PATCH)...")
-# resp = req("PATCH", f"{BASE_URL}/api/ride/vehicles/{vehicle1_id}/", json={"color": "Vermelho"}, headers=auth_header(new_driver_access))
-resp = req("PATCH", f"{BASE_URL}/api/ride/vehicles/{vehicle1_id}/", json={"color": "azul"}, headers=auth_header(new_driver_access))
+# resp = req("PATCH", f"{BASE_URL}/api/ride/vehicles/{vehicle1_id}/", data={"color": "Vermelho"}, headers=auth_header(new_driver_access))
+resp = req("PATCH", f"{BASE_URL}/api/ride/vehicles/{vehicle1_id}/", data={"color": "azul"}, headers=auth_header(new_driver_access))
 veiculo_atualizado = check_response(resp, 200)
 print(f"✅ Veículo atualizado:\n{json.dumps(veiculo_atualizado, indent=2)}")
 
@@ -177,10 +177,10 @@ ride_data = {
     "start_time": start_time, "expected_arrival": expected_arrival,
     "available_seats": 3, "status": "pendente", "price": 45.00
 }
-resp = req("POST", f"{BASE_URL}/api/ride/rides/", json=ride_data, headers=auth_header(new_driver_access))
+resp = req("POST", f"{BASE_URL}/api/ride/rides/", data=ride_data, headers=auth_header(new_driver_access))
 ride1 = check_response(resp, 201)
 ride1_id = ride1["id"]
-ride1_uuid = ride1["uuid"]
+ride1_uuid = ride1["id"]   # id é o UUID da carona
 print(f"✅ Carona 1 criada:\n{json.dumps(ride1, indent=2)}")
 
 print("\n🚕 Criando carona 2...")
@@ -190,7 +190,7 @@ ride2_data = {
     "expected_arrival": (datetime.now(timezone.utc) + timedelta(hours=6)).isoformat(),
     "available_seats": 2, "status": "pendente", "price": 20.00
 }
-resp = req("POST", f"{BASE_URL}/api/ride/rides/", json=ride2_data, headers=auth_header(new_driver_access))
+resp = req("POST", f"{BASE_URL}/api/ride/rides/", data=ride2_data, headers=auth_header(new_driver_access))
 ride2 = check_response(resp, 201)
 ride2_id = ride2["id"]
 print(f"✅ Carona 2 criada:\n{json.dumps(ride2, indent=2)}")
@@ -214,19 +214,44 @@ patch_ride = {
     "start_time": start_time, "expected_arrival": expected_arrival,
     "available_seats": 3, "status": "pendente", "price": "45.00"
 }
-resp = req("PATCH", f"{BASE_URL}/api/ride/rides/{ride1_id}/", json=patch_ride, headers=auth_header(new_driver_access))
+resp = req("PATCH", f"{BASE_URL}/api/ride/rides/{ride1_id}/", data=patch_ride, headers=auth_header(new_driver_access))
 carona_atualizada = check_response(resp, 200)
 print(f"✅ Carona atualizada:\n{json.dumps(carona_atualizada, indent=2)}")
 
 # ------------------------------------------------------------
 # 8. Reservas
 # ------------------------------------------------------------
+
+# ------------------------------------------------------------
+# Sincronização manual do passageiro no ride-service
+# ------------------------------------------------------------
+print("\n👤 Sincronizando passageiro no serviço de caronas...")
+user_payload = {
+    "id": passenger_data["id"],          # mesmo UUID do registro
+    "name": passenger_data["nome"],
+    "is_driver": False
+}
+resp = req("POST", f"{BASE_URL}/api/ride/users/", data=user_payload, headers=auth_header(passenger_access))
+
+if resp.status_code in (200, 201):
+    print("✅ Passageiro sincronizado com sucesso!")
+else:
+    print(f"⚠️ Erro ao sincronizar: {resp.status_code} - {resp.text[:200]}")
+    # Verifica se já existe (caso o Kafka tenha funcionado)
+    resp_get = req("GET", f"{BASE_URL}/api/ride/users/{passenger_data['id']}/", headers=auth_header(passenger_access))
+    if resp_get.status_code == 200:
+        print("✅ Passageiro já existe no ride-service (ignorando erro).")
+    else:
+        print("❌ Passageiro não encontrado e não foi possível criá-lo. Abortando reserva.")
+        exit(1)
+
+
 print("\n📅 Criando reserva...")
 reservation_data = {
     "ride": ride1_id, "passenger": passenger_data["id"],
     "requested_seats": 2, "status": "pendente"
 }
-resp = req("POST", f"{BASE_URL}/api/ride/reservations/", json=reservation_data, headers=auth_header(passenger_access))
+resp = req("POST", f"{BASE_URL}/api/ride/reservations/", data=reservation_data, headers=auth_header(passenger_access))
 reservation1 = check_response(resp, 201)
 reservation1_id = reservation1["id"]
 print(f"✅ Reserva criada:\n{json.dumps(reservation1, indent=2)}")
@@ -242,7 +267,7 @@ reserva_detalhe = check_response(resp, 200)
 print(f"✅ Detalhe:\n{json.dumps(reserva_detalhe, indent=2)}")
 
 print(f"\n✏️ Confirmar reserva {reservation1_id} (PATCH)...")
-resp = req("PATCH", f"{BASE_URL}/api/ride/reservations/{reservation1_id}/", json={"status": "confirmada"}, headers=auth_header(passenger_access))
+resp = req("PATCH", f"{BASE_URL}/api/ride/reservations/{reservation1_id}/", data={"status": "confirmada"}, headers=auth_header(passenger_access))
 reserva_confirmada = check_response(resp, 200)
 print(f"✅ Reserva confirmada:\n{json.dumps(reserva_confirmada, indent=2)}")
 
@@ -283,7 +308,7 @@ else:
         "driver_id": driver_data["id"],
         "passenger_ids": [passenger_data["id"]]
     }
-    resp_post = req("POST", f"{BASE_URL}/api/chat/rooms/", json=chat_payload, headers=auth_header(passenger_access))
+    resp_post = req("POST", f"{BASE_URL}/api/chat/rooms/", data=chat_payload, headers=auth_header(passenger_access))
     if resp_post.status_code in (200, 201):
         room = resp_post.json()
         print(f"✅ Sala criada com participantes:\n{json.dumps(room, indent=2)}")
@@ -294,12 +319,12 @@ else:
 if room:
     msg_url = f"{BASE_URL}/api/chat/rooms/{ride1_uuid}/messages/"
     print("\n💬 Enviando mensagem do passageiro...")
-    resp = req("POST", msg_url, json={"usuario_id": passenger_data["id"], "conteudo": "Olá, motorista! Estou no ponto."}, headers=auth_header(passenger_access))
+    resp = req("POST", msg_url, data={"usuario_id": passenger_data["id"], "conteudo": "Olá, motorista! Estou no ponto."}, headers=auth_header(passenger_access))
     msg_pass = check_response(resp, 201)
     print(f"✅ Mensagem enviada:\n{json.dumps(msg_pass, indent=2)}")
 
     print("\n💬 Enviando mensagem do motorista...")
-    resp = req("POST", msg_url, json={"usuario_id": driver_data["id"], "conteudo": "Chego em 5 minutos."}, headers=auth_header(new_driver_access))
+    resp = req("POST", msg_url, data={"usuario_id": driver_data["id"], "conteudo": "Chego em 5 minutos."}, headers=auth_header(new_driver_access))
     msg_motorista = check_response(resp, 201)
     print(f"✅ Mensagem enviada:\n{json.dumps(msg_motorista, indent=2)}")
 
@@ -359,7 +384,7 @@ else:
         "driver_id": driver_data["id"],
         "passenger_ids": [passenger_data["id"]]
     }
-    resp_post = req("POST", f"{BASE_URL}/api/chat/rooms/", json=chat_payload, headers=auth_header(passenger_access))
+    resp_post = req("POST", f"{BASE_URL}/api/chat/rooms/", data=chat_payload, headers=auth_header(passenger_access))
     if resp_post.status_code in (200, 201):
         room = resp_post.json()
         print(f"✅ Sala criada com participantes:\n{json.dumps(room, indent=2)}")
@@ -370,7 +395,7 @@ else:
 if room:
     msg_url = f"{BASE_URL}/api/chat/rooms/{ride1_uuid}/messages/"
     print("\n💬 Enviando mensagem do motorista...")
-    resp = req("POST", msg_url, json={"usuario_id": driver_data["id"], "conteudo": "Chego em 5 minutos."}, headers=auth_header(new_driver_access))
+    resp = req("POST", msg_url, data={"usuario_id": driver_data["id"], "conteudo": "Chego em 5 minutos."}, headers=auth_header(new_driver_access))
     msg_motorista = check_response(resp, 201)
     if msg_motorista is not None:
         print(f"✅ Mensagem do motorista enviada:\n{json.dumps(msg_motorista, indent=2)}")
@@ -378,7 +403,7 @@ if room:
         print("⚠️ Falha ao enviar mensagem do motorista")
 
     print("\n💬 Enviando mensagem do passageiro...")
-    resp = req("POST", msg_url, json={"usuario_id": passenger_data["id"], "conteudo": "Olá, estou no ponto!"}, headers=auth_header(passenger_access))
+    resp = req("POST", msg_url, data={"usuario_id": passenger_data["id"], "conteudo": "Olá, estou no ponto!"}, headers=auth_header(passenger_access))
     msg_passageiro = check_response(resp, 201)
     if msg_passageiro is not None:
         print(f"✅ Mensagem do passageiro enviada:\n{json.dumps(msg_passageiro, indent=2)}")
@@ -419,7 +444,7 @@ else:
 # ------------------------------------------------------------
 print("\n🚪 Logout (POST /api/logout/)...")
 logout_refresh = new_driver_refresh if new_driver_refresh else driver_refresh
-resp = req("POST", f"{BASE_URL}/api/logout/", json={"refresh": logout_refresh}, headers=auth_header(new_driver_access))
+resp = req("POST", f"{BASE_URL}/api/logout/", data={"refresh": logout_refresh}, headers=auth_header(new_driver_access))
 if resp.status_code == 205:
     print("✅ Logout realizado")
 else:
@@ -473,7 +498,7 @@ driver1_payload = {
     "name": "Motorista IA 1",
     "is_driver": True
 }
-resp = req("POST", f"{BASE_URL}/api/ride/users/", json=driver1_payload)
+resp = req("POST", f"{BASE_URL}/api/ride/users/", data=driver1_payload)
 driver1 = check_response(resp, 201)
 print(f"✅ Motorista 1 criado: {json.dumps(driver1, indent=2)}")
 
@@ -483,7 +508,7 @@ driver2_payload = {
     "name": "Motorista IA 2",
     "is_driver": True
 }
-resp = req("POST", f"{BASE_URL}/api/ride/users/", json=driver2_payload)
+resp = req("POST", f"{BASE_URL}/api/ride/users/", data=driver2_payload)
 driver2 = check_response(resp, 201)
 print(f"✅ Motorista 2 criado: {json.dumps(driver2, indent=2)}")
 
@@ -493,7 +518,7 @@ passenger_payload = {
     "name": "Passageiro IA",
     "is_driver": False
 }
-resp = req("POST", f"{BASE_URL}/api/ride/users/", json=passenger_payload)
+resp = req("POST", f"{BASE_URL}/api/ride/users/", data=passenger_payload)
 passenger = check_response(resp, 201)
 print(f"✅ Passageiro criado: {json.dumps(passenger, indent=2)}")
 
@@ -509,7 +534,7 @@ vehicle1_payload = {
     "plate": "TES-1234",
     "seats": 5
 }
-resp = req("POST", f"{BASE_URL}/api/ride/vehicles/", json=vehicle1_payload)
+resp = req("POST", f"{BASE_URL}/api/ride/vehicles/", data=vehicle1_payload)
 vehicle1 = check_response(resp, 201)
 vehicle1_id = vehicle1["id"]
 print(f"✅ Veículo 1 criado: {json.dumps(vehicle1, indent=2)}")
@@ -523,7 +548,7 @@ vehicle2_payload = {
     "plate": "XYZ-9876",
     "seats": 4
 }
-resp = req("POST", f"{BASE_URL}/api/ride/vehicles/", json=vehicle2_payload)
+resp = req("POST", f"{BASE_URL}/api/ride/vehicles/", data=vehicle2_payload)
 vehicle2 = check_response(resp, 201)
 vehicle2_id = vehicle2["id"]
 print(f"✅ Veículo 2 criado: {json.dumps(vehicle2, indent=2)}")
@@ -550,7 +575,7 @@ for i in range(3):
         "status": "pendente",
         "price": prices[i]
     }
-    resp = req("POST", f"{BASE_URL}/api/ride/rides/", json=ride_data)
+    resp = req("POST", f"{BASE_URL}/api/ride/rides/", data=ride_data)
     ride = check_response(resp, 201)
     rides.append(ride)
     print(f"✅ Carona {i+1} criada (motorista 1): id={ride['id']}")
@@ -569,7 +594,7 @@ for i in range(3, 5):
         "status": "pendente",
         "price": prices[i]
     }
-    resp = req("POST", f"{BASE_URL}/api/ride/rides/", json=ride_data)
+    resp = req("POST", f"{BASE_URL}/api/ride/rides/", data=ride_data)
     ride = check_response(resp, 201)
     rides.append(ride)
     print(f"✅ Carona {i+1} criada (motorista 2): id={ride['id']}")
@@ -585,7 +610,7 @@ for idx, ride in enumerate(rides[:3]):
         "requested_seats": 1,
         "status": "confirmada"
     }
-    resp = req("POST", f"{BASE_URL}/api/ride/reservations/", json=reservation_payload)
+    resp = req("POST", f"{BASE_URL}/api/ride/reservations/", data=reservation_payload)
     reservation = check_response(resp, 201)
     print(f"✅ Reserva {idx+1} criada e confirmada: id={reservation['id']}")
 
@@ -627,7 +652,7 @@ texto_busca = "quero viajar do centro para o aeroporto amanhã, preço até 30 r
 
 print(f"\n📝 Texto de busca: \"{texto_busca}\"")
 
-resp = req("POST", f"{BASE_URL}/api/ride/rides/ai-filter/", json={"text": texto_busca})
+resp = req("POST", f"{BASE_URL}/api/ride/rides/ai-filter/", data={"text": texto_busca})
 
 if resp.status_code == 200:
     data = resp.json()
@@ -655,7 +680,7 @@ else:
 print("\n" + "-"*40)
 print("📝 Teste com outro texto: \"Shopping, carro, até 35 reais\"")
 texto_busca2 ="Terminal Central para Shopping até 40"
-resp = req("POST", f"{BASE_URL}/api/ride/rides/ai-filter/", json={"text": texto_busca2})
+resp = req("POST", f"{BASE_URL}/api/ride/rides/ai-filter/", data={"text": texto_busca2})
 
 if resp.status_code == 200:
     data = resp.json()
