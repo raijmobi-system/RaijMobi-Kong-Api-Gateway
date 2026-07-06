@@ -1,5 +1,36 @@
 _format_version: "3.0"
 
+# ==========================================
+# PLUGINS GLOBAIS (Aplica para todo o Kong)
+# ==========================================
+plugins:
+  - name: cors
+    config:
+      origins:
+        - http://localhost:3000
+        - http://localhost:8000       # Padrão do Ionic web
+        - http://10.41.89.110:3000    # Seu novo IP (React/Next)
+        - http://10.0.0.17:8100
+        - http://10.0.0.17:8000   # Seu novo IP (Ionic web)
+        - http://localhost            # Aplicativos Android (Capacitor)
+        - capacitor://localhost
+        
+      methods:
+        - GET
+        - POST
+        - PUT
+        - PATCH
+        - DELETE
+        - OPTIONS
+      headers:
+        - Accept
+        - Authorization
+        - Content-Type
+        - Origin
+        - X-Requested-With
+      credentials: true
+      max_age: 3600
+
 services:
   # ==========================================
   # 1. USER SERVICE
@@ -7,16 +38,19 @@ services:
   - name: user-service
     url: http://user-service:8000
     routes:
-      # --- ROTAS PÚBLICAS (Sem JWT) ---
       - name: auth-routes
         paths:
-          - /api/login           # <-- Rota real do Django liberada!
-          - /api/register        # <-- Rota real do Django liberada!
-          - /api/token/refresh   # <-- Rota real do Django liberada!
-          - /api/reset-password    
+          - /api/login
+          - /api/login/
+          - /api/register
+          - /api/register/
+          - /api/token/refresh
+          - /api/reset-password
+          - /api/auth/google/
+          - /api/profile/complete/
         strip_path: false
-      
-      # --- ROTAS PROTEGIDAS (Com JWT) ---
+        # REMOVIDO: bloco plugins (cors) daqui
+
       - name: user-route-protected
         paths:
           - /api
@@ -31,7 +65,7 @@ services:
   # 2. CHAT SERVICE
   # ==========================================
   - name: chat-service
-    url: http://chat-service:8000       # <-- Aponta para a porta 8000 do container chat
+    url: http://chat-service:8000
     plugins:
       - name: jwt
         config:
@@ -47,7 +81,7 @@ services:
   # 3. RIDE SERVICE
   # ==========================================
   - name: ride-service
-    url: http://ride-service:8000       # <-- Aponta para a porta 8000 do container ride
+    url: http://ride-service:8000
     plugins:
       - name: jwt
         config:
@@ -59,6 +93,9 @@ services:
           - /api/ride
         strip_path: false
 
+  # ==========================================
+  # 4. NOTIFICATION SERVICE
+  # ==========================================
   - name: notification-service
     url: http://notification-service:8000
     plugins:
@@ -71,8 +108,6 @@ services:
         paths:
           - /api/notifications
         strip_path: false
-
-
 
 consumers:
   - username: frontend-app
