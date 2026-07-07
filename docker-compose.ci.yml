@@ -76,9 +76,9 @@ services:
     networks:
       - raijmobi-ci
 
-  # ⚠️ SUBSTITUA pelas suas imagens reais!
+  # --- BUILD A PARTIR DOS REPOSITÓRIOS PÚBLICOS (branches ajustadas) ---
   user-service:
-    image: ghcr.io/seu-usuario/user-service:latest
+    build: https://github.com/raijmobi-system/RaijMobi-User-Service.git#develop
     container_name: user-service
     environment:
       DATABASE_URL: postgresql://user:password@postgres-user:5432/userdb
@@ -92,7 +92,7 @@ services:
       - raijmobi-ci
 
   ride-service:
-    image: ghcr.io/seu-usuario/ride-service:latest
+    build: https://github.com/raijmobi-system/RaijMobi-Ride-Service.git#develop
     container_name: ride-service
     environment:
       DATABASE_URL: postgresql://user:password@postgres-ride:5432/ridedb
@@ -106,7 +106,7 @@ services:
       - raijmobi-ci
 
   chat-service:
-    image: ghcr.io/seu-usuario/chat-service:latest
+    build: https://github.com/raijmobi-system/RaijMobi-Chat-Service.git#main       # ajuste se necessário
     container_name: chat-service
     environment:
       DATABASE_URL: postgresql://user:password@postgres-chat:5432/chatdb
@@ -120,7 +120,7 @@ services:
       - raijmobi-ci
 
   notification-service:
-    image: ghcr.io/seu-usuario/notification-service:latest
+    build: https://github.com/raijmobi-system/RaijMobi-Notifications-Service.git#main  # ajuste se necessário
     container_name: notification-service
     environment:
       DATABASE_URL: postgresql://user:password@postgres-notification:5432/notifdb
