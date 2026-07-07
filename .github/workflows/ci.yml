@@ -97,6 +97,7 @@ jobs:
           check_service "chat-service" 8003
           check_service "notification-service" 8004
 
+
           echo "✅ Todos os serviços estão disponíveis!"
 
       - name: Run integration tests
