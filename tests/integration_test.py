@@ -90,7 +90,7 @@ passenger_data = check_response(resp, 201)
 print(f"✅ Passageiro registrado:\n{json.dumps(passenger_data, indent=2)}")
 
 print("\n⏳ Aguardando sincronização Kafka (5s)...")
-time.sleep(9)
+time.sleep(30)
 
 # ------------------------------------------------------------
 # 2. Login
