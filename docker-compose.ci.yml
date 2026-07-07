@@ -28,14 +28,15 @@ services:
     networks:
       - raijmobi-ci
 
+  # =================== BANCOS DE DADOS ===================
+
   postgres-user:
     image: postgres:14
     container_name: postgres-user
     environment:
-      # Alinhado com o usuário esperado pelo user-service
       POSTGRES_USER: raijmobi_user
-      POSTGRES_PASSWORD: ci_password    # senha fixa para CI
-      POSTGRES_DB: userdb
+      POSTGRES_PASSWORD: ci_password
+      POSTGRES_DB: raijmobi_user_db
     ports:
       - "5432:5432"
     networks:
@@ -45,9 +46,9 @@ services:
     image: postgres:14
     container_name: postgres-ride
     environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: ridedb
+      POSTGRES_USER: raijmobi_ride
+      POSTGRES_PASSWORD: raijmobi_pass
+      POSTGRES_DB: raijmobi_ride_db
     ports:
       - "5433:5432"
     networks:
@@ -57,9 +58,9 @@ services:
     image: postgres:14
     container_name: postgres-chat
     environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: chatdb
+      POSTGRES_USER: raijmobi_chat
+      POSTGRES_PASSWORD: raijmobi_pass
+      POSTGRES_DB: raijmobi_chat_db
     ports:
       - "5434:5432"
     networks:
@@ -69,30 +70,38 @@ services:
     image: postgres:14
     container_name: postgres-notification
     environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: notifdb
+      POSTGRES_USER: raijmobi_notifications
+      POSTGRES_PASSWORD: raijmobi_pass
+      POSTGRES_DB: raijmobi_notifications_db
     ports:
       - "5435:5432"
     networks:
       - raijmobi-ci
 
+  # =================== SERVIÇOS ===================
+
   user-service:
     build: https://github.com/raijmobi-system/RaijMobi-User-Service.git#develop
     container_name: user-service
     environment:
-      # Credenciais do banco (DATABASE_URL + variáveis explícitas)
-      DATABASE_URL: postgresql://raijmobi_user:ci_password@postgres-user:5432/userdb
+      # Banco de dados (mesmos defaults, garantidos)
+      DB_NAME: raijmobi_user_db
       DB_USER: raijmobi_user
       DB_PASSWORD: ci_password
-      DB_NAME: userdb
       DB_HOST: postgres-user
       DB_PORT: 5432
-      # Secrets injetadas pelo CI
+      # Secrets injetadas via CI
       RESEND_API_KEY: ${RESEND_API_KEY}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       SECRET_KEY: ${SECRET_KEY}
       DEBUG: "0"
+    # Gera migrations faltantes, migra e inicia o servidor
+    command: >
+      sh -c "
+        python manage.py makemigrations user_service --noinput 2>/dev/null || true;
+        python manage.py migrate --noinput;
+        python manage.py runserver 0.0.0.0:8000
+      "
     depends_on:
       - postgres-user
       - kafka
@@ -105,7 +114,11 @@ services:
     build: https://github.com/raijmobi-system/RaijMobi-Ride-Service.git#develop
     container_name: ride-service
     environment:
-      DATABASE_URL: postgresql://user:password@postgres-ride:5432/ridedb
+      DB_NAME: raijmobi_ride_db
+      DB_USER: raijmobi_ride
+      DB_PASSWORD: raijmobi_pass
+      DB_HOST: postgres-ride          # corrigido: era localhost
+      DB_PORT: 5432
       KAFKA_BROKER: kafka:9092
       SECRET_KEY: ${SECRET_KEY}
       STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY}
@@ -122,7 +135,11 @@ services:
     build: https://github.com/raijmobi-system/RaijMobi-Chat-Service.git#main
     container_name: chat-service
     environment:
-      DATABASE_URL: postgresql://user:password@postgres-chat:5432/chatdb
+      DB_NAME: raijmobi_chat_db
+      DB_USER: raijmobi_chat
+      DB_PASSWORD: raijmobi_pass
+      DB_HOST: postgres-chat           # corrigido
+      DB_PORT: 5432
       KAFKA_BROKER: kafka:9092
     depends_on:
       - postgres-chat
@@ -136,7 +153,11 @@ services:
     build: https://github.com/raijmobi-system/RaijMobi-Notifications-Service.git#main
     container_name: notification-service
     environment:
-      DATABASE_URL: postgresql://user:password@postgres-notification:5432/notifdb
+      DB_NAME: raijmobi_notifications_db
+      DB_USER: raijmobi_notifications
+      DB_PASSWORD: raijmobi_pass
+      DB_HOST: postgres-notification   # já correto
+      DB_PORT: 5432
       KAFKA_BROKER: kafka:9092
     depends_on:
       - postgres-notification
