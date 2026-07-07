@@ -65,7 +65,7 @@ jobs:
       - name: Run integration tests
         env:
           BASE_URL: http://kong:8000
-          RIDE_SERVICE_URL: http://ride-service:8000
+          RIDE_SERVICE_URL: http://ride-service:8000   # ⬅️ ADICIONADO
         run: |
           python tests/integration_test.py
 
