@@ -7,7 +7,7 @@ from datetime import datetime, timedelta, timezone
 import os   # <-- adicione esta linha no topo
 
 BASE_URL = os.getenv("BASE_URL", "http://localhost:8000")
-RIDE_SERVICE_URL = os.getenv("RIDE_SERVICE_URL", "http://localhost:8004")
+RIDE_SERVICE_URL = os.getenv("RIDE_SERVICE_URL", "http://localhost:8002")
 # ------------------------------------------------------------
 # Utilitários
 # ------------------------------------------------------------
