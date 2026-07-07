@@ -101,7 +101,47 @@ passenger_access, passenger_refresh = get_tokens(passenger_email, password)
 print("✅ Tokens obtidos")
 
 # ------------------------------------------------------------
-# 3. Profile e refresh
+# 3. Sincronização manual de ambos os usuários no ride-service
+# ------------------------------------------------------------
+print("\n👤 Sincronizando motorista no ride-service...")
+driver_payload = {
+    "id": driver_data["id"],
+    "name": driver_data["nome"],
+    "is_driver": True
+}
+resp = req("POST", f"{BASE_URL}/api/ride/users/", data=driver_payload, headers=auth_header(driver_access))
+if resp.status_code in (200, 201):
+    print("✅ Motorista sincronizado com sucesso!")
+else:
+    print(f"⚠️ Erro ao sincronizar motorista: {resp.status_code} - {resp.text[:200]}")
+    # Tenta buscar para ver se já existe
+    resp_get = req("GET", f"{BASE_URL}/api/ride/users/{driver_data['id']}/", headers=auth_header(driver_access))
+    if resp_get.status_code == 200:
+        print("✅ Motorista já existente no ride-service.")
+    else:
+        print("❌ Falha crítica na sincronização do motorista. Abortando.")
+        exit(1)
+
+print("\n👤 Sincronizando passageiro no ride-service...")
+passenger_payload = {
+    "id": passenger_data["id"],
+    "name": passenger_data["nome"],
+    "is_driver": False
+}
+resp = req("POST", f"{BASE_URL}/api/ride/users/", data=passenger_payload, headers=auth_header(passenger_access))
+if resp.status_code in (200, 201):
+    print("✅ Passageiro sincronizado com sucesso!")
+else:
+    print(f"⚠️ Erro ao sincronizar passageiro: {resp.status_code} - {resp.text[:200]}")
+    resp_get = req("GET", f"{BASE_URL}/api/ride/users/{passenger_data['id']}/", headers=auth_header(passenger_access))
+    if resp_get.status_code == 200:
+        print("✅ Passageiro já existente no ride-service.")
+    else:
+        print("❌ Passageiro não encontrado. Abortando.")
+        exit(1)
+
+# ------------------------------------------------------------
+# 4. Profile e refresh
 # ------------------------------------------------------------
 print("\n✏️ Atualizando perfil (PATCH /api/profile/)...")
 resp = req("PATCH", f"{BASE_URL}/api/profile/", data={"telefone": "11999999999"}, headers=auth_header(driver_access))
@@ -115,7 +155,7 @@ new_driver_refresh = tokens.get("refresh", driver_refresh)
 print("✅ Token refresh OK")
 
 # ------------------------------------------------------------
-# 4. Criar veículos
+# 5. Criar veículos
 # ------------------------------------------------------------
 print("\n🚗 Criando veículo 1...")
 vehicle_data = {
@@ -140,7 +180,7 @@ vehicle2_id = vehicle2["id"]
 print(f"✅ Veículo 2 criado:\n{json.dumps(vehicle2, indent=2)}")
 
 # ------------------------------------------------------------
-# 5. Testar endpoints de veículos
+# 6. Testar endpoints de veículos
 # ------------------------------------------------------------
 print("\n📋 Listando veículos (GET)...")
 resp = req("GET", f"{BASE_URL}/api/ride/vehicles/", headers=auth_header(new_driver_access))
@@ -165,7 +205,7 @@ else:
     print(f"⚠️ DELETE retornou {resp.status_code}")
 
 # ------------------------------------------------------------
-# 6. Criar caronas
+# 7. Criar caronas
 # ------------------------------------------------------------
 print("\n🚕 Criando carona 1...")
 start_time = (datetime.now(timezone.utc) + timedelta(hours=2)).isoformat()
@@ -194,7 +234,7 @@ ride2_id = ride2["id"]
 print(f"✅ Carona 2 criada:\n{json.dumps(ride2, indent=2)}")
 
 # ------------------------------------------------------------
-# 7. Testar endpoints de rides
+# 8. Testar endpoints de rides
 # ------------------------------------------------------------
 print("\n📋 Listando caronas (GET)...")
 resp = req("GET", f"{BASE_URL}/api/ride/rides/", headers=auth_header(new_driver_access))
@@ -217,29 +257,8 @@ carona_atualizada = check_response(resp, 200)
 print(f"✅ Carona atualizada:\n{json.dumps(carona_atualizada, indent=2)}")
 
 # ------------------------------------------------------------
-# 8. Reservas
+# 9. Reservas (o passageiro já foi sincronizado anteriormente)
 # ------------------------------------------------------------
-
-# Sincronização manual do passageiro no ride-service
-print("\n👤 Sincronizando passageiro no serviço de caronas...")
-user_payload = {
-    "id": passenger_data["id"],
-    "name": passenger_data["nome"],
-    "is_driver": False
-}
-resp = req("POST", f"{BASE_URL}/api/ride/users/", data=user_payload, headers=auth_header(passenger_access))
-
-if resp.status_code in (200, 201):
-    print("✅ Passageiro sincronizado com sucesso!")
-else:
-    print(f"⚠️ Erro ao sincronizar: {resp.status_code} - {resp.text[:200]}")
-    resp_get = req("GET", f"{BASE_URL}/api/ride/users/{passenger_data['id']}/", headers=auth_header(passenger_access))
-    if resp_get.status_code == 200:
-        print("✅ Passageiro já existe no ride-service (ignorando erro).")
-    else:
-        print("❌ Passageiro não encontrado e não foi possível criá-lo. Abortando reserva.")
-        exit(1)
-
 print("\n📅 Criando reserva...")
 reservation_data = {
     "ride": ride1_id, "passenger": passenger_data["id"],
@@ -282,7 +301,7 @@ notif_passenger = check_response(resp, 200)
 print(f"✅ Notificações passageiro:\n{json.dumps(notif_passenger, indent=2)}")
 
 # ------------------------------------------------------------
-# 9. Chat - criação com motorista e passageiros
+# 10. Chat - criação com motorista e passageiros
 # ------------------------------------------------------------
 print("\n💬 Chat: obtendo ou criando sala com participantes...")
 time.sleep(3)
@@ -338,7 +357,7 @@ notif_passenger2 = check_response(resp, 200)
 print(f"✅ Notificações passageiro:\n{json.dumps(notif_passenger2, indent=2)}")
 
 # ------------------------------------------------------------
-# 10. Logout
+# 11. Logout
 # ------------------------------------------------------------
 print("\n🚪 Logout (POST /api/logout/)...")
 logout_refresh = new_driver_refresh if new_driver_refresh else driver_refresh
