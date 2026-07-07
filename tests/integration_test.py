@@ -3,14 +3,11 @@ import uuid
 import random
 import time
 import json
-import jwt  # <-- novo
 import os
 from datetime import datetime, timedelta, timezone
 
 BASE_URL = os.getenv("BASE_URL", "http://localhost:8000")
 RIDE_SERVICE_URL = os.getenv("RIDE_SERVICE_URL", "http://localhost:8002")
-# Mesma SECRET_KEY usada no docker-compose.ci.yml para o ride-service
-SECRET_KEY = "django-insecure-ride-ci-key"
 
 # ------------------------------------------------------------
 # Utilitários
@@ -69,15 +66,6 @@ def req(method, url, **kwargs):
     print(f"⬅️ {resp.status_code}")
     return resp
 
-def get_admin_token():
-    """Gera um token JWT para o admin criado no ride-service."""
-    payload = {
-        "user_id": "00000000-0000-0000-0000-000000000001",
-        "username": "ci_admin",
-        "is_superuser": True
-    }
-    return jwt.encode(payload, SECRET_KEY, algorithm="HS256")
-
 # ------------------------------------------------------------
 # 1. Registrar usuários
 # ------------------------------------------------------------
@@ -113,23 +101,21 @@ passenger_access, passenger_refresh = get_tokens(passenger_email, password)
 print("✅ Tokens obtidos")
 
 # ------------------------------------------------------------
-# 3. Sincronização manual com token de admin
+# 3. Sincronização manual de ambos os usuários no ride-service
 # ------------------------------------------------------------
-admin_token = get_admin_token()
-admin_headers = {"Authorization": f"Bearer {admin_token}"}
-
 print("\n👤 Sincronizando motorista no ride-service...")
 driver_payload = {
     "id": driver_data["id"],
     "name": driver_data["nome"],
     "is_driver": True
 }
-resp = req("POST", f"{BASE_URL}/api/ride/users/", data=driver_payload, headers=admin_headers)
+resp = req("POST", f"{BASE_URL}/api/ride/users/", data=driver_payload, headers=auth_header(driver_access))
 if resp.status_code in (200, 201):
     print("✅ Motorista sincronizado com sucesso!")
 else:
-    # Verifica se já existe
-    resp_get = req("GET", f"{BASE_URL}/api/ride/users/{driver_data['id']}/", headers=admin_headers)
+    print(f"⚠️ Erro ao sincronizar motorista: {resp.status_code} - {resp.text[:200]}")
+    # Tenta buscar para ver se já existe
+    resp_get = req("GET", f"{BASE_URL}/api/ride/users/{driver_data['id']}/", headers=auth_header(driver_access))
     if resp_get.status_code == 200:
         print("✅ Motorista já existente no ride-service.")
     else:
@@ -142,11 +128,12 @@ passenger_payload = {
     "name": passenger_data["nome"],
     "is_driver": False
 }
-resp = req("POST", f"{BASE_URL}/api/ride/users/", data=passenger_payload, headers=admin_headers)
+resp = req("POST", f"{BASE_URL}/api/ride/users/", data=passenger_payload, headers=auth_header(passenger_access))
 if resp.status_code in (200, 201):
     print("✅ Passageiro sincronizado com sucesso!")
 else:
-    resp_get = req("GET", f"{BASE_URL}/api/ride/users/{passenger_data['id']}/", headers=admin_headers)
+    print(f"⚠️ Erro ao sincronizar passageiro: {resp.status_code} - {resp.text[:200]}")
+    resp_get = req("GET", f"{BASE_URL}/api/ride/users/{passenger_data['id']}/", headers=auth_header(passenger_access))
     if resp_get.status_code == 200:
         print("✅ Passageiro já existente no ride-service.")
     else:
@@ -154,7 +141,7 @@ else:
         exit(1)
 
 # ------------------------------------------------------------
-# 4. Profile e refresh (user-service)
+# 4. Profile e refresh
 # ------------------------------------------------------------
 print("\n✏️ Atualizando perfil (PATCH /api/profile/)...")
 resp = req("PATCH", f"{BASE_URL}/api/profile/", data={"telefone": "11999999999"}, headers=auth_header(driver_access))
@@ -270,7 +257,7 @@ carona_atualizada = check_response(resp, 200)
 print(f"✅ Carona atualizada:\n{json.dumps(carona_atualizada, indent=2)}")
 
 # ------------------------------------------------------------
-# 9. Reservas
+# 9. Reservas (o passageiro já foi sincronizado anteriormente)
 # ------------------------------------------------------------
 print("\n📅 Criando reserva...")
 reservation_data = {
@@ -314,7 +301,7 @@ notif_passenger = check_response(resp, 200)
 print(f"✅ Notificações passageiro:\n{json.dumps(notif_passenger, indent=2)}")
 
 # ------------------------------------------------------------
-# 10. Chat
+# 10. Chat - criação com motorista e passageiros
 # ------------------------------------------------------------
 print("\n💬 Chat: obtendo ou criando sala com participantes...")
 time.sleep(3)
