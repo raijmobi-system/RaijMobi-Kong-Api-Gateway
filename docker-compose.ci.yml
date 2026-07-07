@@ -89,7 +89,6 @@ services:
       DB_PASSWORD: ci_password
       DB_HOST: postgres-user
       DB_PORT: 5432
-      # Secrets com fallback – funcionam mesmo sem o ambiente ci-tests
       RESEND_API_KEY: ${RESEND_API_KEY:-dummy_resend_key}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-dummy_google_client_id}
       SECRET_KEY: ${SECRET_KEY:-django-insecure-user-ci-key}
@@ -120,7 +119,6 @@ services:
       DB_HOST: postgres-ride
       DB_PORT: 5432
       KAFKA_BROKER: kafka:9092
-      # As mesmas secrets, com fallback
       RESEND_API_KEY: ${RESEND_API_KEY:-dummy_resend_key}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-dummy_google_client_id}
       SECRET_KEY: ${SECRET_KEY:-django-insecure-ride-ci-key}
@@ -128,7 +126,15 @@ services:
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-sk_test_dummy}
     command: >
       sh -c "
+        # Instala driver PostgreSQL
+        pip install psycopg2-binary;
+        # Remove migrações quebradas (apenas do app core)
+        find . -path '*/core/migrations/*.py' -not -name '__init__.py' -delete;
+        # Recria as migrações do zero
+        python manage.py makemigrations core --noinput;
+        # Aplica as migrações (todas, incluindo as recém-criadas)
         python manage.py migrate --noinput;
+        # Inicia o servidor
         python manage.py runserver 0.0.0.0:8000
       "
     depends_on:
