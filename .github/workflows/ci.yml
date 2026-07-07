@@ -23,7 +23,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install requests
+          pip install requests pyjwt   # <-- PyJWT para gerar token de admin
 
       # DEBUG: exibe se as secrets estão acessíveis (os valores serão mascarados)
       - name: Debug secrets
@@ -97,8 +97,22 @@ jobs:
           check_service "chat-service" 8003
           check_service "notification-service" 8004
 
-
           echo "✅ Todos os serviços estão disponíveis!"
+
+      # NOVO: criar usuário admin no ride-service para sincronização
+      - name: Create admin user in ride-service
+        run: |
+          docker compose -f docker-compose.ci.yml exec -T ride-service python manage.py shell -c "
+from django.contrib.auth import get_user_model;
+User = get_user_model();
+User.objects.get_or_create(
+    id='00000000-0000-0000-0000-000000000001',
+    username='ci_admin',
+    is_active=True,
+    is_superuser=True,
+    is_staff=True
+);
+"
 
       - name: Run integration tests
         env:

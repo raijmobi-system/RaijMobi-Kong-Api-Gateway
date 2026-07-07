@@ -126,15 +126,10 @@ services:
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-sk_test_dummy}
     command: >
       sh -c "
-        # Instala driver PostgreSQL
         pip install psycopg2-binary;
-        # Remove migrações quebradas (apenas do app core)
         find . -path '*/core/migrations/*.py' -not -name '__init__.py' -delete;
-        # Recria as migrações do zero
         python manage.py makemigrations core --noinput;
-        # Aplica as migrações (todas, incluindo as recém-criadas)
         python manage.py migrate --noinput;
-        # Inicia o servidor
         python manage.py runserver 0.0.0.0:8000
       "
     depends_on:
