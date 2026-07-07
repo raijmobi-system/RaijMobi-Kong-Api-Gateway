@@ -28,7 +28,7 @@ jobs:
         run: |
           docker compose -f docker-compose.ci.yml up -d --build
 
-      # Logs de debug
+      # Logs gerais de debug
       - name: Show container logs (debug)
         if: always()
         run: |
@@ -50,57 +50,34 @@ jobs:
             sleep 2
           done
 
-          echo "⏳ Aguardando user-service (localhost:8001)..."
-          for i in $(seq 1 30); do
-            if curl -s -o /dev/null -w "%{http_code}" http://localhost:8001/api/health/ | grep -q "200"; then
-              echo "✅ user-service pronto!"
-              break
-            fi
-            if [ $i -eq 30 ]; then
-              echo "❌ user-service não subiu!"
-              exit 1
-            fi
-            sleep 2
-          done
+          check_service() {
+            local name=$1
+            local port=$2
+            shift 2
+            local paths=("$@")
+            local max_attempts=45
+            echo "⏳ Aguardando ${name} (localhost:${port})..."
+            for i in $(seq 1 $max_attempts); do
+              for path in "${paths[@]}"; do
+                if curl -s -o /dev/null -w "%{http_code}" "http://localhost:${port}${path}" | grep -q "200"; then
+                  echo "✅ ${name} pronto! (${path})"
+                  return 0
+                fi
+              done
+              if [ $i -eq $max_attempts ]; then
+                echo "❌ ${name} não subiu após $((max_attempts * 2)) segundos!"
+                echo "📋 Últimos logs do container ${name}:"
+                docker compose -f docker-compose.ci.yml logs --tail=50 ${name} || true
+                return 1
+              fi
+              sleep 2
+            done
+          }
 
-          echo "⏳ Aguardando ride-service (localhost:8002)..."
-          for i in $(seq 1 30); do
-            if curl -s -o /dev/null -w "%{http_code}" http://localhost:8002/api/ride/rides/ | grep -q "200"; then
-              echo "✅ ride-service pronto!"
-              break
-            fi
-            if [ $i -eq 30 ]; then
-              echo "❌ ride-service não subiu!"
-              exit 1
-            fi
-            sleep 2
-          done
-
-          echo "⏳ Aguardando chat-service (localhost:8003)..."
-          for i in $(seq 1 30); do
-            if curl -s -o /dev/null -w "%{http_code}" http://localhost:8003/api/chat/rooms/ | grep -q "200"; then
-              echo "✅ chat-service pronto!"
-              break
-            fi
-            if [ $i -eq 30 ]; then
-              echo "❌ chat-service não subiu!"
-              exit 1
-            fi
-            sleep 2
-          done
-
-          echo "⏳ Aguardando notification-service (localhost:8004)..."
-          for i in $(seq 1 30); do
-            if curl -s -o /dev/null -w "%{http_code}" http://localhost:8004/api/notifications/ | grep -q "200"; then
-              echo "✅ notification-service pronto!"
-              break
-            fi
-            if [ $i -eq 30 ]; then
-              echo "❌ notification-service não subiu!"
-              exit 1
-            fi
-            sleep 2
-          done
+          check_service "user-service" 8001 "/api/health/" "/health/" "/api/health" "/docs"
+          check_service "ride-service" 8002 "/api/ride/rides/" "/docs"
+          check_service "chat-service" 8003 "/api/chat/rooms/" "/docs"
+          check_service "notification-service" 8004 "/api/notifications/" "/docs"
 
           echo "✅ Todos os serviços estão disponíveis!"
 

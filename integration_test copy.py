@@ -3,12 +3,11 @@ import uuid
 import random
 import time
 import json
-import os
 from datetime import datetime, timedelta, timezone
+import os   # <-- adicione esta linha no topo
 
 BASE_URL = os.getenv("BASE_URL", "http://localhost:8000")
 RIDE_SERVICE_URL = os.getenv("RIDE_SERVICE_URL", "http://localhost:8002")
-
 # ------------------------------------------------------------
 # Utilitários
 # ------------------------------------------------------------
@@ -40,8 +39,10 @@ def get_tokens(email, password):
 def auth_header(token):
     return {"Authorization": f"Bearer {token}"}
 
+# Função de requisição com log detalhado e formatação
 def req(method, url, **kwargs):
     headers = kwargs.get("headers")
+    # Mascarar token no log se presente
     masked_headers = None
     if headers and "Authorization" in headers:
         token = headers["Authorization"].split()[1]
@@ -50,6 +51,7 @@ def req(method, url, **kwargs):
     else:
         masked_headers = headers
 
+    # Prepara o corpo para exibição formatada
     body = None
     if "data" in kwargs:
         body = kwargs["data"]
@@ -153,6 +155,7 @@ veiculo_detalhe = check_response(resp, 200)
 print(f"✅ Detalhe:\n{json.dumps(veiculo_detalhe, indent=2)}")
 
 print(f"\n✏️ Atualizar veículo {vehicle1_id} (PATCH)...")
+# resp = req("PATCH", f"{BASE_URL}/api/ride/vehicles/{vehicle1_id}/", data={"color": "Vermelho"}, headers=auth_header(new_driver_access))
 resp = req("PATCH", f"{BASE_URL}/api/ride/vehicles/{vehicle1_id}/", data={"color": "azul"}, headers=auth_header(new_driver_access))
 veiculo_atualizado = check_response(resp, 200)
 print(f"✅ Veículo atualizado:\n{json.dumps(veiculo_atualizado, indent=2)}")
@@ -220,10 +223,12 @@ print(f"✅ Carona atualizada:\n{json.dumps(carona_atualizada, indent=2)}")
 # 8. Reservas
 # ------------------------------------------------------------
 
+# ------------------------------------------------------------
 # Sincronização manual do passageiro no ride-service
+# ------------------------------------------------------------
 print("\n👤 Sincronizando passageiro no serviço de caronas...")
 user_payload = {
-    "id": passenger_data["id"],
+    "id": passenger_data["id"],          # mesmo UUID do registro
     "name": passenger_data["nome"],
     "is_driver": False
 }
@@ -233,12 +238,14 @@ if resp.status_code in (200, 201):
     print("✅ Passageiro sincronizado com sucesso!")
 else:
     print(f"⚠️ Erro ao sincronizar: {resp.status_code} - {resp.text[:200]}")
+    # Verifica se já existe (caso o Kafka tenha funcionado)
     resp_get = req("GET", f"{BASE_URL}/api/ride/users/{passenger_data['id']}/", headers=auth_header(passenger_access))
     if resp_get.status_code == 200:
         print("✅ Passageiro já existe no ride-service (ignorando erro).")
     else:
         print("❌ Passageiro não encontrado e não foi possível criá-lo. Abortando reserva.")
         exit(1)
+
 
 print("\n📅 Criando reserva...")
 reservation_data = {
@@ -266,7 +273,7 @@ reserva_confirmada = check_response(resp, 200)
 print(f"✅ Reserva confirmada:\n{json.dumps(reserva_confirmada, indent=2)}")
 
 # ============================================================
-# Verificação de notificações após reserva
+# NOVIDADE: VERIFICAÇÃO DE NOTIFICAÇÕES APÓS RESERVA
 # ============================================================
 print("\n⏳ Aguardando processamento das notificações (5s)...")
 time.sleep(5)
@@ -280,18 +287,23 @@ print("\n🔔 Notificações do passageiro (após reserva):")
 resp = req("GET", f"{BASE_URL}/api/notifications/", headers=auth_header(passenger_access))
 notif_passenger = check_response(resp, 200)
 print(f"✅ Notificações passageiro:\n{json.dumps(notif_passenger, indent=2)}")
-
 # ------------------------------------------------------------
 # 9. Chat - criação com motorista e passageiros
 # ------------------------------------------------------------
 print("\n💬 Chat: obtendo ou criando sala com participantes...")
 time.sleep(3)
 
+# Tenta obter a sala primeiro
 resp_get = req("GET", f"{BASE_URL}/api/chat/rooms/{ride1_uuid}/", headers=auth_header(passenger_access))
 if resp_get.status_code == 200:
     room = resp_get.json()
     print(f"✅ Sala já existente: {json.dumps(room, indent=2)}")
+    # Se a sala já existe, mas foi criada sem participantes, você pode optar por deletá-la e recriar.
+    # Como o endpoint DELETE não está disponível, vamos apenas alertar e pular.
+    # Para garantir, você pode implementar um DELETE manualmente ou usar um PATCH para adicionar os participantes (se houver).
+    # A melhor abordagem é sempre criar com participantes na primeira vez.
 else:
+    # Sala não existe: criar com motorista e passageiros
     chat_payload = {
         "carona_id": ride1_uuid,
         "driver_id": driver_data["id"],
@@ -324,6 +336,7 @@ if room:
 else:
     print("⚠️ Pulando chat devido a erro na criação/obtenção da sala")
 
+# Aguarda processamento das notificações de chat
 print("\n⏳ Aguardando processamento das notificações de chat (5s)...")
 time.sleep(5)
 
@@ -337,8 +350,98 @@ resp = req("GET", f"{BASE_URL}/api/notifications/", headers=auth_header(passenge
 notif_passenger2 = check_response(resp, 200)
 print(f"✅ Notificações passageiro:\n{json.dumps(notif_passenger2, indent=2)}")
 
+# ============================================================
+# NOVIDADE: VERIFICAÇÃO DE NOTIFICAÇÕES APÓS CHAT
+# ============================================================
+print("\n⏳ Aguardando processamento das notificações de chat (5s)...")
+time.sleep(5)
+
+print("\n🔔 Notificações do motorista (após chat):")
+resp = req("GET", f"{BASE_URL}/api/notifications/", headers=auth_header(new_driver_access))
+notif_driver2 = check_response(resp, 200)
+print(f"✅ Notificações motorista:\n{json.dumps(notif_driver2, indent=2)}")
+
+print("\n🔔 Notificações do passageiro (após chat):")
+resp = req("GET", f"{BASE_URL}/api/notifications/", headers=auth_header(passenger_access))
+notif_passenger2 = check_response(resp, 200)
+print(f"✅ Notificações passageiro:\n{json.dumps(notif_passenger2, indent=2)}")
 # ------------------------------------------------------------
-# 10. Logout
+# 10. Chat e notificações de chat (CORRIGIDO)
+# ------------------------------------------------------------
+print("\n" + "="*60)
+print("10. CHAT E NOTIFICAÇÕES DE CHAT")
+print("="*60)
+
+print("\n💬 Verificando se a sala de chat foi criada automaticamente (via Kafka) após confirmação da carona...")
+time.sleep(5)
+resp_get = req("GET", f"{BASE_URL}/api/chat/rooms/{ride1_uuid}/", headers=auth_header(passenger_access))
+if resp_get.status_code == 200:
+    room = resp_get.json()
+    print(f"✅ Sala encontrada (criada automaticamente):\n{json.dumps(room, indent=2)}")
+else:
+    print("⚠️ Sala não encontrada. Criando manualmente com motorista e passageiros...")
+    chat_payload = {
+        "carona_id": ride1_uuid,
+        "driver_id": driver_data["id"],
+        "passenger_ids": [passenger_data["id"]]
+    }
+    resp_post = req("POST", f"{BASE_URL}/api/chat/rooms/", data=chat_payload, headers=auth_header(passenger_access))
+    if resp_post.status_code in (200, 201):
+        room = resp_post.json()
+        print(f"✅ Sala criada com participantes:\n{json.dumps(room, indent=2)}")
+    else:
+        print(f"❌ Erro ao criar sala: {resp_post.status_code} - {resp_post.text}")
+        room = None
+
+if room:
+    msg_url = f"{BASE_URL}/api/chat/rooms/{ride1_uuid}/messages/"
+    print("\n💬 Enviando mensagem do motorista...")
+    resp = req("POST", msg_url, data={"usuario_id": driver_data["id"], "conteudo": "Chego em 5 minutos."}, headers=auth_header(new_driver_access))
+    msg_motorista = check_response(resp, 201)
+    if msg_motorista is not None:
+        print(f"✅ Mensagem do motorista enviada:\n{json.dumps(msg_motorista, indent=2)}")
+    else:
+        print("⚠️ Falha ao enviar mensagem do motorista")
+
+    print("\n💬 Enviando mensagem do passageiro...")
+    resp = req("POST", msg_url, data={"usuario_id": passenger_data["id"], "conteudo": "Olá, estou no ponto!"}, headers=auth_header(passenger_access))
+    msg_passageiro = check_response(resp, 201)
+    if msg_passageiro is not None:
+        print(f"✅ Mensagem do passageiro enviada:\n{json.dumps(msg_passageiro, indent=2)}")
+    else:
+        print("⚠️ Falha ao enviar mensagem do passageiro")
+
+    print("\n📜 Obtendo histórico de mensagens...")
+    resp = req("GET", msg_url, headers=auth_header(passenger_access))
+    messages = check_response(resp, 200)
+    if messages is not None:
+        print(f"✅ {len(messages)} mensagens trocadas:\n{json.dumps(messages, indent=2)}")
+    else:
+        print("⚠️ Falha ao obter mensagens")
+
+    print("\n⏳ Aguardando processamento das notificações do chat (5s)...")
+    time.sleep(5)
+
+    print("\n--- Notificações do motorista (agora com chat) ---")
+    resp = req("GET", f"{BASE_URL}/api/notifications/", headers=auth_header(new_driver_access))
+    notificacoes_motorista_chat = check_response(resp, 200)
+    if notificacoes_motorista_chat is not None:
+        print(json.dumps(notificacoes_motorista_chat, indent=2))
+    else:
+        print("⚠️ Falha ao obter notificações do motorista")
+
+    print("\n--- Notificações do passageiro (agora com chat) ---")
+    resp = req("GET", f"{BASE_URL}/api/notifications/", headers=auth_header(passenger_access))
+    notificacoes_passageiro_chat = check_response(resp, 200)
+    if notificacoes_passageiro_chat is not None:
+        print(json.dumps(notificacoes_passageiro_chat, indent=2))
+    else:
+        print("⚠️ Falha ao obter notificações do passageiro")
+else:
+    print("⚠️ Pulando chat devido a erro na criação/obtenção da sala")
+
+# ------------------------------------------------------------
+# 11. Logout
 # ------------------------------------------------------------
 print("\n🚪 Logout (POST /api/logout/)...")
 logout_refresh = new_driver_refresh if new_driver_refresh else driver_refresh
@@ -349,3 +452,250 @@ else:
     print(f"⚠️ Logout retornou {resp.status_code}")
 
 print("\n🎉 Testes concluídos com logs detalhados e formatados!")
+
+
+
+import requests
+import uuid
+import time
+import json
+from datetime import datetime, timedelta, timezone
+
+BASE_URL = "http://localhost:8004"
+
+# ------------------------------------------------------------
+# Funções auxiliares
+# ------------------------------------------------------------
+def check_response(resp, success_code=200):
+    if resp.status_code != success_code:
+        print(f"❌ Erro {resp.status_code}: {resp.text[:300]}")
+        resp.raise_for_status()
+    return resp.json()
+
+def req(method, url, **kwargs):
+    headers = kwargs.get("headers", {})
+    body = None
+    if "data" in kwargs:
+        body = kwargs["data"]
+    elif "json" in kwargs:
+        body = kwargs["json"]
+
+    print(f"\n➡️ {method} {url}")
+    if headers:
+        print(f"   headers: {json.dumps(headers, indent=2)}")
+    if body:
+        print(f"   body:\n{json.dumps(body, indent=2, ensure_ascii=False)}")
+
+    resp = requests.request(method, url, **kwargs)
+    print(f"⬅️ {resp.status_code}")
+    return resp
+
+# ------------------------------------------------------------
+# 1. Criar usuários
+# ------------------------------------------------------------
+print("\n📝 Criando motorista 1 (is_driver=True)...")
+driver1_payload = {
+    "id": str(uuid.uuid4()),
+    "name": "Motorista IA 1",
+    "is_driver": True
+}
+resp = req("POST", f"{BASE_URL}/api/ride/users/", data=driver1_payload)
+driver1 = check_response(resp, 201)
+print(f"✅ Motorista 1 criado: {json.dumps(driver1, indent=2)}")
+
+print("\n📝 Criando motorista 2 (is_driver=True)...")
+driver2_payload = {
+    "id": str(uuid.uuid4()),
+    "name": "Motorista IA 2",
+    "is_driver": True
+}
+resp = req("POST", f"{BASE_URL}/api/ride/users/", data=driver2_payload)
+driver2 = check_response(resp, 201)
+print(f"✅ Motorista 2 criado: {json.dumps(driver2, indent=2)}")
+
+print("\n📝 Criando passageiro (is_driver=False)...")
+passenger_payload = {
+    "id": str(uuid.uuid4()),
+    "name": "Passageiro IA",
+    "is_driver": False
+}
+resp = req("POST", f"{BASE_URL}/api/ride/users/", data=passenger_payload)
+passenger = check_response(resp, 201)
+print(f"✅ Passageiro criado: {json.dumps(passenger, indent=2)}")
+
+# ------------------------------------------------------------
+# 2. Criar veículos
+# ------------------------------------------------------------
+print("\n🚗 Criando veículo para motorista 1...")
+vehicle1_payload = {
+    "user": driver1["id"],
+    "model": "HB20",
+    "type_vehicle": "carro",
+    "color": "preto",
+    "plate": "TES-1234",
+    "seats": 5
+}
+resp = req("POST", f"{BASE_URL}/api/ride/vehicles/", data=vehicle1_payload)
+vehicle1 = check_response(resp, 201)
+vehicle1_id = vehicle1["id"]
+print(f"✅ Veículo 1 criado: {json.dumps(vehicle1, indent=2)}")
+
+print("\n🚗 Criando veículo para motorista 2...")
+vehicle2_payload = {
+    "user": driver2["id"],
+    "model": "Ford Ka",
+    "type_vehicle": "carro",
+    "color": "azul",
+    "plate": "XYZ-9876",
+    "seats": 4
+}
+resp = req("POST", f"{BASE_URL}/api/ride/vehicles/", data=vehicle2_payload)
+vehicle2 = check_response(resp, 201)
+vehicle2_id = vehicle2["id"]
+print(f"✅ Veículo 2 criado: {json.dumps(vehicle2, indent=2)}")
+
+# ------------------------------------------------------------
+# 3. Criar caronas (3 do motorista 1, 2 do motorista 2)
+# ------------------------------------------------------------
+rides = []
+origins = ["Terminal Central", "Shopping", "Aeroporto", "Centro", "Rodoviária"]
+destinations = ["Shopping", "Terminal Central", "Centro", "Aeroporto", "Rodoviária"]
+prices = [25.00, 30.00, 45.00, 20.00, 35.00]
+
+# Primeiras 3 caronas com motorista 1
+for i in range(3):
+    start = (datetime.now(timezone.utc) + timedelta(hours=i+1)).isoformat()
+    arrival = (datetime.now(timezone.utc) + timedelta(hours=i+2)).isoformat()
+    ride_data = {
+        "vehicle": vehicle1_id,
+        "origin": origins[i],
+        "destination": destinations[i],
+        "start_time": start,
+        "expected_arrival": arrival,
+        "available_seats": 3,
+        "status": "pendente",
+        "price": prices[i]
+    }
+    resp = req("POST", f"{BASE_URL}/api/ride/rides/", data=ride_data)
+    ride = check_response(resp, 201)
+    rides.append(ride)
+    print(f"✅ Carona {i+1} criada (motorista 1): id={ride['id']}")
+
+# Próximas 2 caronas com motorista 2
+for i in range(3, 5):
+    start = (datetime.now(timezone.utc) + timedelta(hours=i+1)).isoformat()
+    arrival = (datetime.now(timezone.utc) + timedelta(hours=i+2)).isoformat()
+    ride_data = {
+        "vehicle": vehicle2_id,
+        "origin": origins[i],
+        "destination": destinations[i],
+        "start_time": start,
+        "expected_arrival": arrival,
+        "available_seats": 2,   # veículo 2 tem apenas 4 assentos
+        "status": "pendente",
+        "price": prices[i]
+    }
+    resp = req("POST", f"{BASE_URL}/api/ride/rides/", data=ride_data)
+    ride = check_response(resp, 201)
+    rides.append(ride)
+    print(f"✅ Carona {i+1} criada (motorista 2): id={ride['id']}")
+
+# ------------------------------------------------------------
+# 4. Criar reservas para gerar histórico (3 primeiras caronas)
+# ------------------------------------------------------------
+print("\n📅 Criando reservas (histórico)...")
+for idx, ride in enumerate(rides[:3]):
+    reservation_payload = {
+        "ride": ride["id"],
+        "passenger": passenger["id"],
+        "requested_seats": 1,
+        "status": "confirmada"
+    }
+    resp = req("POST", f"{BASE_URL}/api/ride/reservations/", data=reservation_payload)
+    reservation = check_response(resp, 201)
+    print(f"✅ Reserva {idx+1} criada e confirmada: id={reservation['id']}")
+
+# Aguardar processamento (triggers assíncronos, se houver)
+time.sleep(2)
+
+# ------------------------------------------------------------
+# 5. TESTAR RECOMENDAÇÃO COM IA (OLLAMA)
+# ------------------------------------------------------------
+print("\n🤖 Testando recomendação por IA...")
+resp = req("GET", f"{BASE_URL}/api/ride/rides/ai-recommendations/?user_id={passenger['id']}&top_n=3")
+
+if resp.status_code == 200:
+    recommendations = resp.json()
+    print(f"✅ Recomendações obtidas ({len(recommendations)} caronas):")
+    for i, rec in enumerate(recommendations):
+        print(f"\n--- Recomendação {i+1} ---")
+        print(f"  Origem: {rec.get('origin')} → Destino: {rec.get('destination')}")
+        print(f"  Preço: R$ {rec.get('price')}")
+        print(f"  Partida: {rec.get('start_time')}")
+        print(f"  Vagas: {rec.get('available_seats')}")
+        print(f"  Status: {rec.get('status')}")
+        print(f"  Motivo IA: {rec.get('ai_reason', '(não informado)')}")
+else:
+    print(f"❌ Falha na recomendação: {resp.status_code} - {resp.text}")
+
+print("\n🎉 Teste finalizado!")
+
+
+# ------------------------------------------------------------
+# 6. TESTAR FILTRO COM IA (OLLAMA)
+# ------------------------------------------------------------
+print("\n" + "="*60)
+print("🔍 Testando filtro inteligente com IA")
+print("="*60)
+
+# Texto de exemplo para filtrar caronas
+texto_busca = "quero viajar do centro para o aeroporto amanhã, preço até 30 reais"
+
+print(f"\n📝 Texto de busca: \"{texto_busca}\"")
+
+resp = req("POST", f"{BASE_URL}/api/ride/rides/ai-filter/", data={"text": texto_busca})
+
+if resp.status_code == 200:
+    data = resp.json()
+    print(f"✅ Filtro aplicado com sucesso!")
+    print(f"\n📊 Filtros extraídos pela IA:")
+    print(json.dumps(data.get('filters_applied', {}), indent=2, ensure_ascii=False))
+    print(f"\n📋 Caronas encontradas: {data.get('count', 0)}")
+    
+    if data.get('results'):
+        for i, ride in enumerate(data['results'], 1):
+            print(f"\n--- Carona {i} ---")
+            print(f"  ID: {ride.get('id')}")
+            print(f"  Origem: {ride.get('origin')} → Destino: {ride.get('destination')}")
+            print(f"  Partida: {ride.get('start_time')}")
+            print(f"  Preço: R$ {ride.get('price')}")
+            print(f"  Vagas: {ride.get('available_seats')}")
+            print(f"  Status: {ride.get('status')}")
+    else:
+        print("  Nenhuma carona encontrada com os filtros extraídos.")
+else:
+    print(f"❌ Falha no filtro: {resp.status_code}")
+    print(f"   Detalhes: {resp.text[:200]}")
+
+# Teste com outro texto
+print("\n" + "-"*40)
+print("📝 Teste com outro texto: \"Shopping, carro, até 35 reais\"")
+texto_busca2 ="Terminal Central para Shopping até 40"
+resp = req("POST", f"{BASE_URL}/api/ride/rides/ai-filter/", data={"text": texto_busca2})
+
+if resp.status_code == 200:
+    data = resp.json()
+    print(f"✅ Filtro aplicado com sucesso!")
+    print(f"\n📊 Filtros extraídos pela IA:")
+    print(json.dumps(data.get('filters_applied', {}), indent=2, ensure_ascii=False))
+    print(f"\n📋 Caronas encontradas: {data.get('count', 0)}")
+    
+    if data.get('results'):
+        for i, ride in enumerate(data['results'], 1):
+            print(f"\n--- Carona {i} ---")
+            print(f"  Origem: {ride.get('origin')} → Destino: {ride.get('destination')}")
+            print(f"  Preço: R$ {ride.get('price')}")
+    else:
+        print("  Nenhuma carona encontrada.")
+else:
+    print(f"❌ Falha no filtro: {resp.status_code}")
