@@ -76,9 +76,9 @@ services:
     networks:
       - raijmobi-ci
 
-  # --- SERVIÇOS COM BUILD LOCAL (substitua os paths se necessário) ---
+  # ⚠️ SUBSTITUA pelas imagens reais
   user-service:
-    build: ./user-service          # diretório que contém o Dockerfile
+    image: ghcr.io/seu-usuario/user-service:latest
     container_name: user-service
     environment:
       DATABASE_URL: postgresql://user:password@postgres-user:5432/userdb
@@ -92,7 +92,7 @@ services:
       - raijmobi-ci
 
   ride-service:
-    build: ./ride-service
+    image: ghcr.io/seu-usuario/ride-service:latest
     container_name: ride-service
     environment:
       DATABASE_URL: postgresql://user:password@postgres-ride:5432/ridedb
@@ -106,7 +106,7 @@ services:
       - raijmobi-ci
 
   chat-service:
-    build: ./chat-service
+    image: ghcr.io/seu-usuario/chat-service:latest
     container_name: chat-service
     environment:
       DATABASE_URL: postgresql://user:password@postgres-chat:5432/chatdb
@@ -120,7 +120,7 @@ services:
       - raijmobi-ci
 
   notification-service:
-    build: ./notification-service
+    image: ghcr.io/seu-usuario/notification-service:latest
     container_name: notification-service
     environment:
       DATABASE_URL: postgresql://user:password@postgres-notification:5432/notifdb
