@@ -32,8 +32,9 @@ services:
     image: postgres:14
     container_name: postgres-user
     environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
+      # Alinhado com o usuário esperado pelo user-service
+      POSTGRES_USER: raijmobi_user
+      POSTGRES_PASSWORD: ci_password    # senha fixa para CI
       POSTGRES_DB: userdb
     ports:
       - "5432:5432"
@@ -80,12 +81,17 @@ services:
     build: https://github.com/raijmobi-system/RaijMobi-User-Service.git#develop
     container_name: user-service
     environment:
-      DATABASE_URL: postgresql://user:password@postgres-user:5432/userdb
-      KAFKA_BROKER: kafka:9092
+      # Credenciais do banco (DATABASE_URL + variáveis explícitas)
+      DATABASE_URL: postgresql://raijmobi_user:ci_password@postgres-user:5432/userdb
+      DB_USER: raijmobi_user
+      DB_PASSWORD: ci_password
+      DB_NAME: userdb
+      DB_HOST: postgres-user
+      DB_PORT: 5432
+      # Secrets injetadas pelo CI
       RESEND_API_KEY: ${RESEND_API_KEY}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
-      # Opcional: Django SECRET_KEY (pode usar a mesma do ride ou uma separada)
-      SECRET_KEY: ${SECRET_KEY:-django-insecure-user-ci}
+      SECRET_KEY: ${SECRET_KEY}
       DEBUG: "0"
     depends_on:
       - postgres-user

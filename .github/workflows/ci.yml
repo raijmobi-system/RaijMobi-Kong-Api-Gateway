@@ -37,7 +37,6 @@ jobs:
         run: |
           docker compose -f docker-compose.ci.yml up -d --build
 
-      # Logs gerais de debug
       - name: Show container logs (debug)
         if: always()
         run: |
