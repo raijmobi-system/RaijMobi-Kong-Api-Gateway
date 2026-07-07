@@ -1,0 +1,182 @@
+version: '3.8'
+
+services:
+  # ==========================================
+  # INFRAESTRUTURA (Kafka + Zookeeper)
+  # ==========================================
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    networks:
+      - raijmobi-ci
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+    ports:
+      - "9092:9092"
+    networks:
+      - raijmobi-ci
+
+  # ==========================================
+  # BANCOS DE DADOS (exemplo com PostgreSQL)
+  # ==========================================
+  postgres-user:
+    image: postgres:14
+    container_name: postgres-user
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: userdb
+    ports:
+      - "5432:5432"
+    networks:
+      - raijmobi-ci
+
+  postgres-ride:
+    image: postgres:14
+    container_name: postgres-ride
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: ridedb
+    ports:
+      - "5433:5432"
+    networks:
+      - raijmobi-ci
+
+  postgres-chat:
+    image: postgres:14
+    container_name: postgres-chat
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: chatdb
+    ports:
+      - "5434:5432"
+    networks:
+      - raijmobi-ci
+
+  postgres-notification:
+    image: postgres:14
+    container_name: postgres-notification
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: notifdb
+    ports:
+      - "5435:5432"
+    networks:
+      - raijmobi-ci
+
+  # ==========================================
+  # MICROSSERVIÇOS (use suas imagens ou builds)
+  # ==========================================
+  user-service:
+    image: seu-user-service:latest   # ← substitua pela sua imagem
+    # build: ./user-service          # ou use build local
+    container_name: user-service
+    environment:
+      DATABASE_URL: postgresql://user:password@postgres-user:5432/userdb
+      KAFKA_BROKER: kafka:9092
+    depends_on:
+      - postgres-user
+      - kafka
+    ports:
+      - "8001:8000"
+    networks:
+      - raijmobi-ci
+
+  ride-service:
+    image: seu-ride-service:latest
+    # build: ./ride-service
+    container_name: ride-service
+    environment:
+      DATABASE_URL: postgresql://user:password@postgres-ride:5432/ridedb
+      KAFKA_BROKER: kafka:9092
+    depends_on:
+      - postgres-ride
+      - kafka
+    ports:
+      - "8002:8000"
+    networks:
+      - raijmobi-ci
+
+  chat-service:
+    image: seu-chat-service:latest
+    # build: ./chat-service
+    container_name: chat-service
+    environment:
+      DATABASE_URL: postgresql://user:password@postgres-chat:5432/chatdb
+      KAFKA_BROKER: kafka:9092
+    depends_on:
+      - postgres-chat
+      - kafka
+    ports:
+      - "8003:8000"
+    networks:
+      - raijmobi-ci
+
+  notification-service:
+    image: seu-notification-service:latest
+    # build: ./notification-service
+    container_name: notification-service
+    environment:
+      DATABASE_URL: postgresql://user:password@postgres-notification:5432/notifdb
+      KAFKA_BROKER: kafka:9092
+    depends_on:
+      - postgres-notification
+      - kafka
+    ports:
+      - "8004:8000"
+    networks:
+      - raijmobi-ci
+
+  # ==========================================
+  # KONG GATEWAY
+  # ==========================================
+  kong:
+    image: kong:3.4
+    container_name: kong-gateway
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /usr/local/kong/declarative/kong.yml
+      KONG_PROXY_ACCESS_LOG: /dev/stdout
+      KONG_ADMIN_ACCESS_LOG: /dev/stdout
+      KONG_PROXY_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_LISTEN: 0.0.0.0:8001, 0.0.0.0:8444 ssl
+    ports:
+      - "8000:8000"   # Proxy público
+      - "8001:8001"   # Admin API
+    volumes:
+      - ./kong.yml:/usr/local/kong/declarative/kong.yml:ro
+    depends_on:
+      - user-service
+      - ride-service
+      - chat-service
+      - notification-service
+    networks:
+      - raijmobi-ci
+
+# ==========================================
+# REDE (agora interna, não external)
+# ==========================================
+networks:
+  raijmobi-ci:
+    driver: bridge
