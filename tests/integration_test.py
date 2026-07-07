@@ -123,6 +123,8 @@ else:
         exit(1)
 
 print("\n👤 Sincronizando passageiro no ride-service...")
+time.sleep(10)
+
 passenger_payload = {
     "id": passenger_data["id"],
     "name": passenger_data["nome"],
