@@ -77,7 +77,7 @@ services:
       - raijmobi-ci
 
   user-service:
-    build: https://github.com/raijmobi-system/RaijMobi-User-Service.git#fevelop
+    build: https://github.com/raijmobi-system/RaijMobi-User-Service.git#develop
     container_name: user-service
     environment:
       DATABASE_URL: postgresql://user:password@postgres-user:5432/userdb
@@ -91,7 +91,7 @@ services:
       - raijmobi-ci
 
   ride-service:
-    build: https://github.com/raijmobi-system/RaijMobi-Ride-Service.git#fevelop
+    build: https://github.com/raijmobi-system/RaijMobi-Ride-Service.git#develop
     container_name: ride-service
     environment:
       DATABASE_URL: postgresql://user:password@postgres-ride:5432/ridedb
