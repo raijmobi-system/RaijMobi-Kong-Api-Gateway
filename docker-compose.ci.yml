@@ -82,6 +82,11 @@ services:
     environment:
       DATABASE_URL: postgresql://user:password@postgres-user:5432/userdb
       KAFKA_BROKER: kafka:9092
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      # Opcional: Django SECRET_KEY (pode usar a mesma do ride ou uma separada)
+      SECRET_KEY: ${SECRET_KEY:-django-insecure-user-ci}
+      DEBUG: "0"
     depends_on:
       - postgres-user
       - kafka
@@ -96,6 +101,9 @@ services:
     environment:
       DATABASE_URL: postgresql://user:password@postgres-ride:5432/ridedb
       KAFKA_BROKER: kafka:9092
+      SECRET_KEY: ${SECRET_KEY}
+      STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
     depends_on:
       - postgres-ride
       - kafka
@@ -144,8 +152,7 @@ services:
       KONG_ADMIN_ERROR_LOG: /dev/stderr
       KONG_ADMIN_LISTEN: 0.0.0.0:8001, 0.0.0.0:8444 ssl
     ports:
-      - "8000:8000"   # Proxy – usado pelos testes
-      # Removido: "8001:8001" (Admin API não é necessária no CI)
+      - "8000:8000"
     volumes:
       - ./kong.yml:/usr/local/kong/declarative/kong.yml:ro
     depends_on:

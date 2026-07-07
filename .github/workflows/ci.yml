@@ -9,6 +9,7 @@ on:
 jobs:
   integration-tests:
     runs-on: ubuntu-latest
+    environment: ci-tests          # ← ambiente único com todas as secrets
 
     steps:
       - name: Checkout code
@@ -25,6 +26,14 @@ jobs:
           pip install requests
 
       - name: Build and start services
+        env:
+          # Secrets do user-service
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          # Secrets do ride-service
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          STRIPE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_PUBLISHABLE_KEY }}
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
         run: |
           docker compose -f docker-compose.ci.yml up -d --build
 
