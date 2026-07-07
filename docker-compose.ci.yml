@@ -84,18 +84,18 @@ services:
     build: https://github.com/raijmobi-system/RaijMobi-User-Service.git#develop
     container_name: user-service
     environment:
-      # Banco de dados (mesmos defaults, garantidos)
       DB_NAME: raijmobi_user_db
       DB_USER: raijmobi_user
       DB_PASSWORD: ci_password
       DB_HOST: postgres-user
       DB_PORT: 5432
-      # Secrets injetadas via CI
-      RESEND_API_KEY: ${RESEND_API_KEY}
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
-      SECRET_KEY: ${SECRET_KEY}
+      # Secrets com fallback – funcionam mesmo sem o ambiente ci-tests
+      RESEND_API_KEY: ${RESEND_API_KEY:-dummy_resend_key}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-dummy_google_client_id}
+      SECRET_KEY: ${SECRET_KEY:-django-insecure-user-ci-key}
+      STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY:-pk_test_dummy}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-sk_test_dummy}
       DEBUG: "0"
-    # Gera migrations faltantes, migra e inicia o servidor
     command: >
       sh -c "
         python manage.py makemigrations user_service --noinput 2>/dev/null || true;
@@ -117,12 +117,20 @@ services:
       DB_NAME: raijmobi_ride_db
       DB_USER: raijmobi_ride
       DB_PASSWORD: raijmobi_pass
-      DB_HOST: postgres-ride          # corrigido: era localhost
+      DB_HOST: postgres-ride
       DB_PORT: 5432
       KAFKA_BROKER: kafka:9092
-      SECRET_KEY: ${SECRET_KEY}
-      STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY}
-      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      # As mesmas secrets, com fallback
+      RESEND_API_KEY: ${RESEND_API_KEY:-dummy_resend_key}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-dummy_google_client_id}
+      SECRET_KEY: ${SECRET_KEY:-django-insecure-ride-ci-key}
+      STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY:-pk_test_dummy}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-sk_test_dummy}
+    command: >
+      sh -c "
+        python manage.py migrate --noinput;
+        python manage.py runserver 0.0.0.0:8000
+      "
     depends_on:
       - postgres-ride
       - kafka
@@ -138,7 +146,7 @@ services:
       DB_NAME: raijmobi_chat_db
       DB_USER: raijmobi_chat
       DB_PASSWORD: raijmobi_pass
-      DB_HOST: postgres-chat           # corrigido
+      DB_HOST: postgres-chat
       DB_PORT: 5432
       KAFKA_BROKER: kafka:9092
     depends_on:
@@ -156,7 +164,7 @@ services:
       DB_NAME: raijmobi_notifications_db
       DB_USER: raijmobi_notifications
       DB_PASSWORD: raijmobi_pass
-      DB_HOST: postgres-notification   # já correto
+      DB_HOST: postgres-notification
       DB_PORT: 5432
       KAFKA_BROKER: kafka:9092
     depends_on:
