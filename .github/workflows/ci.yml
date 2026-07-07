@@ -24,8 +24,8 @@ jobs:
           python -m pip install --upgrade pip
           pip install requests
 
-      # 🚀 FAÇA LOGIN NO REGISTRY (ex.: GitHub Container Registry)
-      - name: Login to GitHub Container Registry
+      # 🔐 Login no registry onde as imagens estão
+      - name: Login to GitHub Container Registry (exemplo)
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -73,7 +73,7 @@ jobs:
       - name: Run integration tests
         env:
           BASE_URL: http://kong:8000
-          RIDE_SERVICE_URL: http://ride-service:8000   # ⚠️ IMPORTANTE
+          RIDE_SERVICE_URL: http://ride-service:8000
         run: |
           python tests/integration_test.py
 

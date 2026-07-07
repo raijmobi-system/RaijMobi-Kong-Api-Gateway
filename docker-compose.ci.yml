@@ -76,7 +76,7 @@ services:
     networks:
       - raijmobi-ci
 
-  # ⚠️ SUBSTITUA pelas imagens reais
+  # ⚠️ SUBSTITUA pelas suas imagens reais!
   user-service:
     image: ghcr.io/seu-usuario/user-service:latest
     container_name: user-service
