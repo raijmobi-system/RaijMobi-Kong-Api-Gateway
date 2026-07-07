@@ -1,9 +1,4 @@
-version: '3.8'
-
 services:
-  # ==========================================
-  # INFRAESTRUTURA
-  # ==========================================
   zookeeper:
     image: confluentinc/cp-zookeeper:latest
     container_name: zookeeper
@@ -33,9 +28,6 @@ services:
     networks:
       - raijmobi-ci
 
-  # ==========================================
-  # BANCOS DE DADOS
-  # ==========================================
   postgres-user:
     image: postgres:14
     container_name: postgres-user
@@ -84,11 +76,9 @@ services:
     networks:
       - raijmobi-ci
 
-  # ==========================================
-  # MICROSSERVIÇOS (build local)
-  # ==========================================
+  # --- SUBSTITUA AS IMAGENS ABAIXO PELAS SUAS ---
   user-service:
-    build: ../user-service          # <-- ajuste o caminho conforme sua estrutura
+    image: seu-registry/user-service:latest   # <-- altere para sua imagem real
     container_name: user-service
     environment:
       DATABASE_URL: postgresql://user:password@postgres-user:5432/userdb
@@ -102,7 +92,7 @@ services:
       - raijmobi-ci
 
   ride-service:
-    build: ../ride-service
+    image: seu-registry/ride-service:latest   # <-- altere
     container_name: ride-service
     environment:
       DATABASE_URL: postgresql://user:password@postgres-ride:5432/ridedb
@@ -116,7 +106,7 @@ services:
       - raijmobi-ci
 
   chat-service:
-    build: ../chat-service
+    image: seu-registry/chat-service:latest   # <-- altere
     container_name: chat-service
     environment:
       DATABASE_URL: postgresql://user:password@postgres-chat:5432/chatdb
@@ -130,7 +120,7 @@ services:
       - raijmobi-ci
 
   notification-service:
-    build: ../notification-service
+    image: seu-registry/notification-service:latest   # <-- altere
     container_name: notification-service
     environment:
       DATABASE_URL: postgresql://user:password@postgres-notification:5432/notifdb
@@ -143,9 +133,6 @@ services:
     networks:
       - raijmobi-ci
 
-  # ==========================================
-  # KONG GATEWAY
-  # ==========================================
   kong:
     image: kong:3.4
     container_name: kong-gateway
