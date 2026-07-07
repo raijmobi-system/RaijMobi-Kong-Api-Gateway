@@ -26,7 +26,7 @@ jobs:
 
       - name: Build and start services
         run: |
-          docker-compose -f docker-compose.ci.yml up -d --build
+          docker compose -f docker-compose.ci.yml up -d --build
 
       - name: Wait for services to be ready
         run: |
@@ -36,26 +36,26 @@ jobs:
           done
           echo "✅ Kong pronto!"
 
-          echo "⏳ Aguardando ride-service..."
-          until curl -s -o /dev/null -w "%{http_code}" http://ride-service:8000/api/ride/health/ | grep -q "200"; do
-            sleep 2
-          done
-          echo "✅ ride-service pronto!"
-
           echo "⏳ Aguardando user-service..."
           until curl -s -o /dev/null -w "%{http_code}" http://user-service:8000/api/health/ | grep -q "200"; do
             sleep 2
           done
           echo "✅ user-service pronto!"
 
+          echo "⏳ Aguardando ride-service..."
+          until curl -s -o /dev/null -w "%{http_code}" http://ride-service:8000/api/ride/rides/ | grep -q "200"; do
+            sleep 2
+          done
+          echo "✅ ride-service pronto!"
+
           echo "⏳ Aguardando chat-service..."
-          until curl -s -o /dev/null -w "%{http_code}" http://chat-service:8000/api/chat/health/ | grep -q "200"; do
+          until curl -s -o /dev/null -w "%{http_code}" http://chat-service:8000/api/chat/rooms/ | grep -q "200"; do
             sleep 2
           done
           echo "✅ chat-service pronto!"
 
           echo "⏳ Aguardando notification-service..."
-          until curl -s -o /dev/null -w "%{http_code}" http://notification-service:8000/api/notifications/health/ | grep -q "200"; do
+          until curl -s -o /dev/null -w "%{http_code}" http://notification-service:8000/api/notifications/ | grep -q "200"; do
             sleep 2
           done
           echo "✅ notification-service pronto!"
@@ -71,4 +71,4 @@ jobs:
 
       - name: Stop services (always run)
         if: always()
-        run: docker-compose -f docker-compose.ci.yml down
+        run: docker compose -f docker-compose.ci.yml down
