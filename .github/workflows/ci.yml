@@ -28,6 +28,12 @@ jobs:
         run: |
           docker compose -f docker-compose.ci.yml up -d --build
 
+      # 🔍 Exibe logs de todos os containers para debug
+      - name: Show container logs (debug)
+        if: always()
+        run: |
+          docker compose -f docker-compose.ci.yml logs
+
       - name: Wait for services to be ready
         run: |
           echo "⏳ Aguardando Kong (aceitando conexões)..."
@@ -35,6 +41,10 @@ jobs:
             if curl -s -o /dev/null -w "%{http_code}" http://kong:8000 | grep -qE "^[1-5][0-9]{2}$"; then
               echo "✅ Kong respondendo!"
               break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "❌ Kong não subiu após 60 segundos!"
+              exit 1
             fi
             echo "Tentativa $i/30..."
             sleep 2
@@ -46,6 +56,10 @@ jobs:
               echo "✅ user-service pronto!"
               break
             fi
+            if [ $i -eq 30 ]; then
+              echo "❌ user-service não subiu!"
+              exit 1
+            fi
             sleep 2
           done
 
@@ -54,6 +68,10 @@ jobs:
             if curl -s -o /dev/null -w "%{http_code}" http://ride-service:8000/api/ride/rides/ | grep -q "200"; then
               echo "✅ ride-service pronto!"
               break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "❌ ride-service não subiu!"
+              exit 1
             fi
             sleep 2
           done
@@ -64,6 +82,10 @@ jobs:
               echo "✅ chat-service pronto!"
               break
             fi
+            if [ $i -eq 30 ]; then
+              echo "❌ chat-service não subiu!"
+              exit 1
+            fi
             sleep 2
           done
 
@@ -72,6 +94,10 @@ jobs:
             if curl -s -o /dev/null -w "%{http_code}" http://notification-service:8000/api/notifications/ | grep -q "200"; then
               echo "✅ notification-service pronto!"
               break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "❌ notification-service não subiu!"
+              exit 1
             fi
             sleep 2
           done
