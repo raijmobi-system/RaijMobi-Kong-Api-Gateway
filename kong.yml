@@ -48,6 +48,8 @@ services:
           - /api/reset-password
           - /api/auth/google/
           - /api/profile/complete/
+          - /api/admin-logs/       
+          - /api/admin-logs
         strip_path: false
         # REMOVIDO: bloco plugins (cors) daqui
 
