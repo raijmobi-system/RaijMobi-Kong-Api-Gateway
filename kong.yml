@@ -71,10 +71,15 @@ services:
         config:
           claims_to_verify:
             - exp
+          # 🌟 ADICIONE ESTAS 3 LINHAS AQUI:
+          uri_param_names:
+            - jwt
+            - token
     routes:
       - name: chat-route
         paths:
           - /api/chat
+          - /ws/chat/
         strip_path: false
 
   # ==========================================
