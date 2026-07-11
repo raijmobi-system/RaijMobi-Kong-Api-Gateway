@@ -1,0 +1,112 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  integration-tests:
+    runs-on: ubuntu-latest
+    environment: ci-tests          # ← ambiente com as secrets
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests
+
+      # DEBUG: exibe se as secrets estão acessíveis (os valores serão mascarados)
+      - name: Debug secrets
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          STRIPE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_PUBLISHABLE_KEY }}
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+        run: |
+          echo "RESEND_API_KEY length: ${#RESEND_API_KEY}"
+          echo "GOOGLE_CLIENT_ID length: ${#GOOGLE_CLIENT_ID}"
+          echo "SECRET_KEY length: ${#SECRET_KEY}"
+          echo "STRIPE_PUBLISHABLE_KEY length: ${#STRIPE_PUBLISHABLE_KEY}"
+          echo "STRIPE_SECRET_KEY length: ${#STRIPE_SECRET_KEY}"
+
+      - name: Build and start services
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          STRIPE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_PUBLISHABLE_KEY }}
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+        run: |
+          docker compose -f docker-compose.ci.yml up -d --build
+
+      - name: Show container logs (debug)
+        if: always()
+        run: |
+          docker compose -f docker-compose.ci.yml logs
+
+      - name: Wait for services to be ready
+        run: |
+          echo "⏳ Aguardando Kong (localhost:8000)..."
+          for i in $(seq 1 30); do
+            if curl -s -o /dev/null -w "%{http_code}" http://localhost:8000 | grep -qE "^[1-5][0-9]{2}$"; then
+              echo "✅ Kong respondendo!"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "❌ Kong não subiu após 60 segundos!"
+              exit 1
+            fi
+            echo "Tentativa $i/30..."
+            sleep 2
+          done
+
+          # Função que aceita qualquer resposta HTTP (serviço no ar)
+          check_service() {
+            local name=$1
+            local port=$2
+            local max_attempts=45
+            echo "⏳ Aguardando ${name} (localhost:${port})..."
+            for i in $(seq 1 $max_attempts); do
+              if curl -s -o /dev/null -w "%{http_code}" "http://localhost:${port}/" | grep -qE "^[1-5][0-9]{2}$"; then
+                echo "✅ ${name} respondendo!"
+                return 0
+              fi
+              if [ $i -eq $max_attempts ]; then
+                echo "❌ ${name} não subiu após $((max_attempts * 2)) segundos!"
+                echo "📋 Últimos logs do container ${name}:"
+                docker compose -f docker-compose.ci.yml logs --tail=50 ${name} || true
+                return 1
+              fi
+              sleep 2
+            done
+          }
+
+          check_service "user-service" 8001
+          check_service "ride-service" 8002
+          check_service "chat-service" 8003
+          check_service "notification-service" 8004
+
+
+          echo "✅ Todos os serviços estão disponíveis!"
+
+      - name: Run integration tests
+        env:
+          BASE_URL: http://localhost:8000
+          RIDE_SERVICE_URL: http://localhost:8002
+        run: |
+          python tests/integration_test.py
+
+      - name: Stop services (always run)
+        if: always()
+        run: docker compose -f docker-compose.ci.yml down
