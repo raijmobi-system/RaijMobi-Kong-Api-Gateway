@@ -337,7 +337,8 @@ for i in range(2):
         "start_time": start_time,
         "expected_arrival": expected_arrival,
         "available_seats": 3,
-        "price": prices[i]
+        "price": prices[i],
+        "status": "pendente" 
     }
     resp = req("POST", f"{RIDE_SERVICE_URL}/api/ride/rides/",
         json=ride_data,
@@ -358,7 +359,8 @@ for i in range(3, 5):
         "start_time": start_time,
         "expected_arrival": expected_arrival,
         "available_seats": 2,
-        "price": prices[i]
+        "price": prices[i],
+        "status": "pendente"    
     }
     resp = req("POST", f"{RIDE_SERVICE_URL}/api/ride/rides/",
         json=ride_data,
