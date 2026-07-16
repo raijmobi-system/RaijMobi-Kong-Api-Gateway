@@ -64,8 +64,9 @@ services:
                 - exp
       - name: user-media-route
         paths:
-        - /media
+          - /media/fotos_perfil
         strip_path: false
+        
       # Sem JWT – públic
 
   # ==========================================
@@ -106,7 +107,8 @@ services:
               - exp
     - name: ride-media-route
       paths:
-        - /media
+        - /media/rides
+        - /media/vehicles
       strip_path: false
       # Sem JWT – públic
 
